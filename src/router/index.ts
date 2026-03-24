@@ -7,6 +7,8 @@ const ProductList    = () => import('@/admin/views/ProductList.vue')
 const ProductForm    = () => import('@/admin/views/ProductForm.vue')
 const CategoryList   = () => import('@/admin/views/CategoryList.vue')
 const CategoryForm   = () => import('@/admin/views/CategoryForm.vue')
+const BrandList      = () => import('@/admin/views/BrandList.vue')
+const BrandForm      = () => import('@/admin/views/BrandForm.vue')
 
 // Giữ UserLayout của bạn nếu đã có, hoặc để router-view
 // const UserLayout     = () => import('@/user/layouts/UserLayout.vue')
@@ -28,6 +30,9 @@ export default createRouter({
         { path: 'categories',            component: CategoryList,   name: 'categories' },
         { path: 'categories/create',     component: CategoryForm,   name: 'category-create' },
         { path: 'categories/:id/edit',   component: CategoryForm,   name: 'category-edit' },
+        { path: 'brands',              component: BrandList,     name: 'brands' },
+        { path: 'brands/create',       component: BrandForm,     name: 'brand-create' },
+        { path: 'brands/:id/edit',     component: BrandForm,     name: 'brand-edit' },
       ],
     },
 

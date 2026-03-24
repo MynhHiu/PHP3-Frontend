@@ -12,13 +12,14 @@ export interface Product {
   price: number
   original_price?: number
   stock: number
-  brand?: string
-  category_id: number
+  brand_id?: number        // ← đổi từ brand (string) thành brand_id (number)
+  categories_id: number    // ← đổi từ category_id
   images?: string[]
   status: 'active' | 'draft' | 'hidden'
   is_featured: boolean
   created_at?: string
   category?: { id: number; name: string }
+  brand?: { id: number; name: string }  // ← thêm object brand
 }
 
 export interface ProductMeta {

@@ -55,4 +55,20 @@ export const productApi = {
   delete:  (id: number) => api.delete(`/admin/products/${id}`),
 }
 
+// ── Brands ────────────────────────────────────
+export const brandApi = {
+  getAll:  (params = {}) => api.get('/admin/brands', { params }),
+  getOne:  (id: number)  => api.get(`/admin/brands/${id}`),
+  create:  (data: FormData) => api.post('/admin/brands', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update:  (id: number, data: FormData) => {
+    data.append('_method', 'PUT')
+    return api.post(`/admin/brands/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  delete:  (id: number) => api.delete(`/admin/brands/${id}`),
+}
+
 export default api

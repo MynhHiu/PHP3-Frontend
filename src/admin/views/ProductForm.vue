@@ -28,9 +28,17 @@
               </div>
               <div class="form-row-2">
                 <div class="field">
-                  <label class="label">SKU</label>
-                  <input v-model="form.sku" class="input" placeholder="Tự động nếu để trống" />
-                </div>
+                <label class="label">Danh mục <span class="req">*</span></label>
+                <select v-model="form.categories_id" class="input" required>
+                  <option value="">-- Chọn danh mục --</option>
+                  <optgroup v-if="catStore.rootCategories.length" label="Danh mục gốc">
+                    <option v-for="c in catStore.rootCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </optgroup>
+                  <optgroup v-if="catStore.childCategories.length" label="Danh mục con">
+                    <option v-for="c in catStore.childCategories" :key="c.id" :value="c.id">↳ {{ c.name }}</option>
+                  </optgroup>
+                </select>
+              </div>
                 <div class="field">
                   <label class="label">Thương hiệu</label>
                   <select v-model="form.brand_id" class="input">
@@ -82,17 +90,9 @@
             <h3>Phân loại</h3>
             <div class="form-inner">
               <div class="field">
-                <label class="label">Danh mục <span class="req">*</span></label>
-                <select v-model="form.categories_id" class="input" required>
-                  <option value="">-- Chọn danh mục --</option>
-                  <optgroup v-if="catStore.rootCategories.length" label="Danh mục gốc">
-                    <option v-for="c in catStore.rootCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </optgroup>
-                  <optgroup v-if="catStore.childCategories.length" label="Danh mục con">
-                    <option v-for="c in catStore.childCategories" :key="c.id" :value="c.id">↳ {{ c.name }}</option>
-                  </optgroup>
-                </select>
-              </div>
+                  <label class="label">SKU</label>
+                  <input v-model="form.sku" class="input" placeholder="Tự động nếu để trống" />
+                </div>
               <div class="field">
                 <label class="label">Trạng thái</label>
                 <select v-model="form.status" class="input">
@@ -120,7 +120,7 @@
                   <span class="price-suffix">₫</span>
                 </div>
               </div>
-              <div class="field">
+              <!-- <div class="field">
                 <label class="label">Giá gốc</label>
                 <div class="price-input">
                   <input v-model.number="form.original_price" type="number" min="0" step="1000" class="input" />
@@ -131,20 +131,20 @@
               <div class="field">
                 <label class="label">Tồn kho <span class="req">*</span></label>
                 <input v-model.number="form.stock" type="number" min="0" class="input" required />
-              </div>
+              </div> -->
             </div>
           </div>
 
-          <div class="section-card">
+          <!-- <div class="section-card">
             <h3>SEO</h3>
             <div class="field">
               <label class="label">Slug URL</label>
               <input v-model="form.slug" class="input font-mono" placeholder="tu-dong-tao" />
               <p class="slug-hint">/san-pham/<span>{{ form.slug || 'slug' }}</span></p>
             </div>
-          </div>
+          </div> -->
         </div>
-
+        
         <!-- Actions -->
         <div class="form-col-full">
           <div class="form-footer">

@@ -55,6 +55,8 @@ export const productApi = {
   delete:  (id: number) => api.delete(`/admin/products/${id}`),
 }
 
+export default api
+
 // ── Brands ────────────────────────────────────
 export const brandApi = {
   getAll:  (params = {}) => api.get('/admin/brands', { params }),
@@ -69,6 +71,7 @@ export const brandApi = {
     })
   },
   delete:  (id: number) => api.delete(`/admin/brands/${id}`),
+
 }
 
-export default api
+

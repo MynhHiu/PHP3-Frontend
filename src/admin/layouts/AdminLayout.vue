@@ -42,6 +42,13 @@
           </div>
         </router-link>
 
+        <router-link to="/admin/brands" custom v-slot="{ isActive, navigate }">
+          <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']" :title="!open ? 'Thương hiệu' : ''">
+            <IconList class="nav-icon" />
+            <span v-if="open">Thương hiệu</span>
+          </div>
+        </router-link>
+
         <template v-if="open"><p class="nav-section" style="margin-top:8px">Hệ thống</p></template>
         <div v-else class="nav-divider"></div>
 

@@ -40,10 +40,10 @@
         <thead>
           <tr>
             <th>Tên danh mục</th>
-            <th>Slug</th>
-            <th>Danh mục cha</th>
-            <th>Sản phẩm</th>
-            <th>Thứ tự</th>
+            <!-- <th>Slug</th> -->
+            <!-- <th>Danh mục cha</th> -->
+            <!-- <th>Sản phẩm</th> -->
+            <!-- <th>Thứ tự</th> -->
             <th>Trạng thái</th>
             <th class="text-right">Thao tác</th>
           </tr>
@@ -58,13 +58,13 @@
                 <p :class="['cat-name', cat.parent_id ? 'child' : 'root']">{{ cat.name }}</p>
               </div>
             </td>
-            <td style="font-family:monospace;font-size:11px;color:var(--gray-400)">{{ cat.slug }}</td>
-            <td>
+            <!-- <td style="font-family:monospace;font-size:11px;color:var(--gray-400)">{{ cat.slug }}</td> -->
+            <!-- <td>
               <span v-if="cat.parent_id" class="cat-chip">{{ parentName(cat.parent_id) }}</span>
               <span v-else style="font-size:12px;color:var(--gray-400)">—</span>
-            </td>
-            <td style="font-weight:600;color:var(--gray-700)">{{ cat.products_count ?? 0 }}</td>
-            <td style="color:var(--gray-500)">{{ cat.sort_order }}</td>
+            </td> -->
+            <!-- <td style="font-weight:600;color:var(--gray-700)">{{ cat.products_count ?? 0 }}</td> -->
+            <!-- <td style="color:var(--gray-500)">{{ cat.sort_order }}</td> -->
             <td>
               <span :class="cat.is_active ? 'badge badge-green' : 'badge badge-gray'">
                 {{ cat.is_active ? 'Hiển thị' : 'Ẩn' }}

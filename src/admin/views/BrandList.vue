@@ -5,7 +5,7 @@
     <div class="page-header">
       <div class="page-header-info">
         <h2>Thương hiệu</h2>
-        <p>Tổng {{ store.meta.total }} thương hiệu</p>
+        <p>Tổng {{ store.brands.length }} thương hiệu</p>
       </div>
       <router-link to="/admin/brands/create" class="btn btn-primary">
         <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -44,7 +44,7 @@
         <button @click="doFetch" class="btn btn-outline btn-sm" style="margin-top:12px">🔄 Thử lại</button>
       </div>
 
-      <div v-else-if="store.brands.length === 0" class="empty-table">
+      <div v-else-if="filteredBrands.length === 0" class="empty-table">
         <div class="icon-lg">🏷️</div>
         <p>Chưa có thương hiệu nào</p>
         <router-link to="/admin/brands/create" class="btn btn-primary btn-sm">+ Thêm thương hiệu đầu tiên</router-link>
@@ -55,36 +55,36 @@
           <tr>
             <th style="width:32px"><input type="checkbox" /></th>
             <th>Thương hiệu</th>
-            <th>Slug</th>
+            <!-- <th>Slug</th>
             <th>Quốc gia</th>
             <th>Website</th>
             <th>Sản phẩm</th>
             <th>Thứ tự</th>
-            <th>Trạng thái</th>
+            <th>Trạng thái</th> -->
             <th class="text-right">Thao tác</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="b in store.brands" :key="b.id">
+          <tr v-for="b in filteredBrands" :key="b.id">
             <td><input type="checkbox" /></td>
             <td>
               <div class="brand-cell">
-                <div class="brand-logo">
+                <!-- <div class="brand-logo">
                   <img v-if="b.logo" :src="logoUrl(b.logo)" />
                   <span v-else>{{ b.name.charAt(0) }}</span>
-                </div>
+                </div> -->
                 <div>
                   <p class="brand-name">{{ b.name }}</p>
-                  <p v-if="b.description" class="brand-desc">{{ b.description }}</p>
+                  <!-- <p v-if="b.description" class="brand-desc">{{ b.description }}</p> -->
                 </div>
               </div>
             </td>
-            <td style="font-family:monospace;font-size:11px;color:var(--gray-400)">{{ b.slug }}</td>
-            <td>
+            <!-- <td style="font-family:monospace;font-size:11px;color:var(--gray-400)">{{ b.slug ?? '—' }}</td> -->
+            <!-- <td>
               <span v-if="b.country" class="cat-chip">{{ b.country }}</span>
               <span v-else style="color:var(--gray-400);font-size:12px">—</span>
-            </td>
-            <td>
+            </td> -->
+            <!-- <td>
               <a v-if="b.website" :href="b.website" target="_blank" class="brand-link">
                 {{ shortUrl(b.website) }}
                 <svg style="width:10px;height:10px;margin-left:2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -92,14 +92,14 @@
                 </svg>
               </a>
               <span v-else style="color:var(--gray-400);font-size:12px">—</span>
-            </td>
-            <td style="font-weight:600;color:var(--gray-700)">{{ b.products_count ?? 0 }}</td>
-            <td style="color:var(--gray-500)">{{ b.sort_order }}</td>
-            <td>
+            </td> -->
+            <!-- <td style="font-weight:600;color:var(--gray-700)">{{ b.products_count ?? 0 }}</td>
+            <td style="color:var(--gray-500)">{{ b.sort_order ?? 0 }}</td> -->
+            <!-- <td>
               <span :class="b.is_active ? 'badge badge-green' : 'badge badge-gray'">
                 {{ b.is_active ? 'Hiển thị' : 'Ẩn' }}
               </span>
-            </td>
+            </td> -->
             <td>
               <div class="row-actions">
                 <router-link :to="`/admin/brands/${b.id}/edit`" class="btn-icon edit" title="Sửa">
@@ -119,17 +119,6 @@
           </tr>
         </tbody>
       </table>
-
-      <!-- Pagination -->
-      <div v-if="store.meta.last_page > 1" class="pagination">
-        <span>Trang {{ store.meta.current_page }} / {{ store.meta.last_page }}</span>
-        <div class="page-btns">
-          <button v-for="pg in store.meta.last_page" :key="pg" @click="goPage(pg)"
-            :class="['page-btn', store.meta.current_page === pg && 'active']">
-            {{ pg }}
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Delete modal -->
@@ -139,12 +128,12 @@
           <div class="modal-icon">🗑️</div>
           <div class="modal-body">
             <h3>Xóa thương hiệu?</h3>
-            <p>
+            <!-- <p>
               Bạn sắp xóa <strong>{{ delTarget.name }}</strong>.
               <span v-if="(delTarget.products_count ?? 0) > 0" class="warn">
                 ⚠️ Thương hiệu này đang có {{ delTarget.products_count }} sản phẩm!
               </span>
-            </p>
+            </p> -->
           </div>
           <div class="modal-actions">
             <button @click="delTarget = null" class="btn btn-outline">Hủy</button>
@@ -168,24 +157,46 @@ const search       = ref('')
 const statusFilter = ref('')
 const delTarget    = ref<Brand | null>(null)
 const deleting     = ref(false)
-const hasFilter    = computed(() => search.value || statusFilter.value)
 
-const BASE    = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
-const logoUrl = (path: string) => `${BASE}/storage/${path}`
+const hasFilter = computed(() => search.value || statusFilter.value)
+
+// Lọc client-side vì store không có params
+const filteredBrands = computed(() => {
+  let list = store.brands
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    list = list.filter(b => b.name.toLowerCase().includes(q))
+  }
+  // if (statusFilter.value !== '') {
+  //   const active = statusFilter.value === '1'
+  //   list = list.filter(b => (b.is_active ?? true) === active)
+  // }
+  return list
+})
+
+const BASE     = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+const logoUrl  = (path: string) => `${BASE}/storage/${path}`
 const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
 
 let timer: ReturnType<typeof setTimeout>
 function debouncedFetch() { clearTimeout(timer); timer = setTimeout(doFetch, 350) }
-function doFetch() { store.fetchAll({ search: search.value, is_active: statusFilter.value, page: 1 }) }
-function goPage(p: number) { store.fetchAll({ search: search.value, is_active: statusFilter.value, page: p }) }
-function clearFilter() { search.value = ''; statusFilter.value = ''; doFetch() }
+function doFetch() { store.fetchAll() }
+function clearFilter() { search.value = ''; statusFilter.value = '' }
 
 function confirmDel(b: Brand) { delTarget.value = b }
 async function doDel() {
   if (!delTarget.value) return
   deleting.value = true
-  try { await store.remove(delTarget.value.id) }
-  finally { deleting.value = false; delTarget.value = null }
+  try {
+    // Nếu store có remove thì dùng, không thì reload sau khi xóa thủ công
+    if (typeof (store as any).remove === 'function') {
+      await (store as any).remove(delTarget.value.id)
+    }
+  } finally {
+    deleting.value = false
+    delTarget.value = null
+    store.fetchAll()
+  }
 }
 
 onMounted(() => store.fetchAll())

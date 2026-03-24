@@ -23,14 +23,14 @@
               <label class="label">Tên thương hiệu <span class="req">*</span></label>
               <input v-model="form.name" @input="autoSlug" class="input" placeholder="VD: Panasonic, Philips..." required />
             </div>
-            <div class="field">
+            <!-- <div class="field">
               <label class="label">Slug</label>
               <input v-model="form.slug" class="input font-mono" placeholder="panasonic" />
               <p class="slug-hint">/thuong-hieu/<span>{{ form.slug || 'slug' }}</span></p>
-            </div>
+            </div> -->
           </div>
 
-          <div class="form-row-2">
+          <!-- <div class="form-row-2">
             <div class="field">
               <label class="label">Quốc gia xuất xứ</label>
               <input v-model="form.country" class="input" placeholder="VD: Nhật Bản, Hàn Quốc..." />
@@ -39,9 +39,9 @@
               <label class="label">Thứ tự hiển thị</label>
               <input v-model.number="form.sort_order" type="number" min="0" class="input" />
             </div>
-          </div>
+          </div> -->
 
-          <div class="field">
+          <!-- <div class="field">
             <label class="label">Website</label>
             <div class="website-input">
               <span class="website-prefix">
@@ -52,14 +52,14 @@
               </span>
               <input v-model="form.website" class="input" style="padding-left:36px" placeholder="https://www.panasonic.com" type="url" />
             </div>
-          </div>
+          </div> -->
 
-          <div class="field">
+          <!-- <div class="field">
             <label class="label">Mô tả</label>
             <textarea v-model="form.description" class="input" rows="3" placeholder="Giới thiệu ngắn về thương hiệu..."></textarea>
-          </div>
+          </div> -->
 
-          <div class="toggle-row" @click="form.is_active = !form.is_active">
+          <!-- <div class="toggle-row" @click="form.is_active = !form.is_active">
             <div :class="['toggle-track', form.is_active && 'on']">
               <div class="toggle-thumb"></div>
             </div>
@@ -67,12 +67,12 @@
               <p class="toggle-label">Hiển thị thương hiệu</p>
               <p class="toggle-sub">Bật để hiện trên website</p>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
 
       <!-- Logo -->
-      <div class="section-card">
+      <!-- <div class="section-card">
         <h3>Logo thương hiệu</h3>
         <div class="upload-zone" @click="($refs.logoRef as HTMLInputElement).click()"
           @dragover.prevent @drop.prevent="onDrop">
@@ -90,7 +90,7 @@
           </template>
         </div>
         <input ref="logoRef" type="file" accept="image/*" class="hidden" @change="onFileChange" />
-      </div>
+      </div> -->
 
       <!-- Actions -->
       <div class="form-footer">
@@ -119,6 +119,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBrandStore } from '@/admin/stores/brandStore'
+import { brandApi } from '@/api'
 
 const route    = useRoute()
 const router   = useRouter()
@@ -153,20 +154,35 @@ function onDrop(e: DragEvent) {
   if (f?.type.startsWith('image/')) { logoFile.value = f; preview.value = URL.createObjectURL(f) }
 }
 
+function buildFd(): FormData {
+  const fd = new FormData()
+  Object.entries(form.value).forEach(([k, v]) => {
+    if (v !== null && v !== undefined) fd.append(k, String(v))
+  })
+  if (logoFile.value) fd.append('logo', logoFile.value)
+  return fd
+}
+
 async function submit() {
   submitting.value = true
   try {
-    const fd = new FormData()
-    Object.entries(form.value).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) fd.append(k, String(v))
-    })
-    if (logoFile.value) fd.append('logo', logoFile.value)
+    const fd = buildFd()
+    const id = Number(route.params.id)
 
     if (isEdit.value) {
-      await store.update(Number(route.params.id), fd)
+      // Dùng store nếu có update, không thì gọi API trực tiếp
+      if (typeof (store as any).update === 'function') {
+        await (store as any).update(id, fd)
+      } else {
+        await brandApi.update(id, fd)
+      }
       showToast('Cập nhật thương hiệu thành công!', 'success')
     } else {
-      await store.create(fd)
+      if (typeof (store as any).create === 'function') {
+        await (store as any).create(fd)
+      } else {
+        await brandApi.create(fd)
+      }
       showToast('Tạo thương hiệu thành công!', 'success')
     }
     setTimeout(() => router.push('/admin/brands'), 1200)
@@ -185,9 +201,21 @@ function showToast(msg: string, type: string) {
 onMounted(async () => {
   if (isEdit.value) {
     await store.fetchAll()
-    const b = store.getById(Number(route.params.id))
+    const id = Number(route.params.id)
+    // Hỗ trợ cả store có getById lẫn không có
+    const b = typeof (store as any).getById === 'function'
+      ? (store as any).getById(id)
+      : store.brands.find(x => x.id === id)
     if (b) {
-      Object.assign(form.value, b)
+      Object.assign(form.value, {
+        name:        b.name        ?? '',
+        slug:        b.slug        ?? '',
+        description: b.description ?? '',
+        website:     b.website     ?? '',
+        country:     b.country     ?? '',
+        sort_order:  b.sort_order  ?? 0,
+        is_active:   b.is_active   ?? true,
+      })
       if (b.logo) {
         const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
         preview.value = `${base}/storage/${b.logo}`

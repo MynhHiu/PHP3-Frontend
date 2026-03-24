@@ -14,29 +14,29 @@
       <div class="section-card">
         <h3>Thông tin danh mục</h3>
         <div class="form-inner">
-          <div class="form-row-2">
+          <div class="form-col">
             <div class="field">
               <label class="label">Tên danh mục <span class="req">*</span></label>
               <input v-model="form.name" @input="autoSlug" class="input" placeholder="VD: Quạt điện, quạt trần" required />
             </div>
-            <div class="field">
+            <!-- <div class="field">
               <label class="label">Slug</label>
               <input v-model="form.slug" class="input font-mono" placeholder="quat-dien-quat-tran" />
-            </div>
+            </div> -->
           </div>
 
           <div class="form-row-2">
-            <div class="field">
+            <!-- <div class="field">
               <label class="label">Danh mục cha</label>
               <select v-model="form.parent_id" class="input">
                 <option :value="null">— Không có (gốc) —</option>
                 <option v-for="c in parentOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
-            </div>
-            <div class="field">
+            </div> -->
+            <!-- <div class="field">
               <label class="label">Thứ tự hiển thị</label>
               <input v-model.number="form.sort_order" type="number" min="0" class="input" />
-            </div>
+            </div> -->
           </div>
 
           <div class="field">
@@ -44,7 +44,7 @@
             <textarea v-model="form.description" class="input" rows="3" placeholder="Mô tả ngắn về danh mục..."></textarea>
           </div>
 
-          <div class="toggle-row" @click="form.is_active = !form.is_active">
+          <!-- <div class="toggle-row" @click="form.is_active = !form.is_active">
             <div :class="['toggle-track', form.is_active && 'on']">
               <div class="toggle-thumb"></div>
             </div>
@@ -52,7 +52,7 @@
               <p class="toggle-label">Hiển thị danh mục</p>
               <p class="toggle-sub">Bật để hiện trên website</p>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
 

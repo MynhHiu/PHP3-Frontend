@@ -3,7 +3,9 @@
     <!-- Header -->
     <div class="form-back-header">
       <router-link to="/admin/products" class="btn-back">
-        <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
       </router-link>
       <div class="fh-info">
         <h2>{{ isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới' }}</h2>
@@ -21,21 +23,36 @@
             <div class="form-inner">
               <div class="field">
                 <label class="label">Tên sản phẩm <span class="req">*</span></label>
-                <input v-model="form.name" @input="autoSlug" class="input" placeholder="VD: Nồi cơm điện Panasonic 1.8L" required />
+                <input v-model="form.name" @input="autoSlug" class="input" placeholder="VD: Nồi cơm điện Panasonic 1.8L"
+                  required />
               </div>
               <div class="form-row-2">
                 <div class="field">
-                  <label class="label">SKU</label>
-                  <input v-model="form.sku" class="input" placeholder="Tự động nếu để trống" />
-                </div>
+                <label class="label">Danh mục <span class="req">*</span></label>
+                <select v-model="form.categories_id" class="input" required>
+                  <option value="">-- Chọn danh mục --</option>
+                  <optgroup v-if="catStore.rootCategories.length" label="Danh mục gốc">
+                    <option v-for="c in catStore.rootCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </optgroup>
+                  <optgroup v-if="catStore.childCategories.length" label="Danh mục con">
+                    <option v-for="c in catStore.childCategories" :key="c.id" :value="c.id">↳ {{ c.name }}</option>
+                  </optgroup>
+                </select>
+              </div>
                 <div class="field">
                   <label class="label">Thương hiệu</label>
-                  <input v-model="form.brand" class="input" placeholder="VD: Panasonic, Philips" />
+                  <select v-model="form.brand_id" class="input">
+                    <option value="">-- Chọn thương hiệu --</option>
+                    <option v-for="b in brandStore.brands" :key="b.id" :value="b.id">
+                      {{ b.name }}
+                    </option>
+                  </select>
                 </div>
               </div>
               <div class="field">
                 <label class="label">Mô tả sản phẩm</label>
-                <textarea v-model="form.description" class="input" rows="4" placeholder="Mô tả chi tiết sản phẩm..."></textarea>
+                <textarea v-model="form.description" class="input" rows="4"
+                  placeholder="Mô tả chi tiết sản phẩm..."></textarea>
               </div>
             </div>
           </div>
@@ -43,12 +60,16 @@
           <!-- Images -->
           <div class="section-card">
             <h3>Hình ảnh <span class="sub">({{ previewImages.length }}/8)</span></h3>
-            <div class="upload-zone" @click="($refs.fileInput as HTMLInputElement).click()"
-              @dragover.prevent @drop.prevent="onDrop">
-              <svg style="width:32px;height:32px;color:var(--gray-300);margin:0 auto 8px;display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            <div class="upload-zone" @click="($refs.fileInput as HTMLInputElement).click()" @dragover.prevent
+              @drop.prevent="onDrop">
+              <svg style="width:32px;height:32px;color:var(--gray-300);margin:0 auto 8px;display:block"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              <p style="font-size:13px;font-weight:500;color:var(--gray-600)">Kéo thả hoặc <span style="color:var(--brand);text-decoration:underline">chọn file</span></p>
+              <p style="font-size:13px;font-weight:500;color:var(--gray-600)">Kéo thả hoặc <span
+                  style="color:var(--brand);text-decoration:underline">chọn file</span></p>
               <p style="font-size:11px;color:var(--gray-400);margin-top:4px">PNG, JPG tối đa 5MB · Tối đa 8 ảnh</p>
             </div>
             <input ref="fileInput" type="file" multiple accept="image/*" class="hidden" @change="onFileChange" />
@@ -69,17 +90,9 @@
             <h3>Phân loại</h3>
             <div class="form-inner">
               <div class="field">
-                <label class="label">Danh mục <span class="req">*</span></label>
-                <select v-model="form.category_id" class="input" required>
-                  <option value="">-- Chọn danh mục --</option>
-                  <optgroup v-if="catStore.rootCategories.length" label="Danh mục gốc">
-                    <option v-for="c in catStore.rootCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </optgroup>
-                  <optgroup v-if="catStore.childCategories.length" label="Danh mục con">
-                    <option v-for="c in catStore.childCategories" :key="c.id" :value="c.id">↳ {{ c.name }}</option>
-                  </optgroup>
-                </select>
-              </div>
+                  <label class="label">SKU</label>
+                  <input v-model="form.sku" class="input" placeholder="Tự động nếu để trống" />
+                </div>
               <div class="field">
                 <label class="label">Trạng thái</label>
                 <select v-model="form.status" class="input">
@@ -107,7 +120,7 @@
                   <span class="price-suffix">₫</span>
                 </div>
               </div>
-              <div class="field">
+              <!-- <div class="field">
                 <label class="label">Giá gốc</label>
                 <div class="price-input">
                   <input v-model.number="form.original_price" type="number" min="0" step="1000" class="input" />
@@ -118,20 +131,20 @@
               <div class="field">
                 <label class="label">Tồn kho <span class="req">*</span></label>
                 <input v-model.number="form.stock" type="number" min="0" class="input" required />
-              </div>
+              </div> -->
             </div>
           </div>
 
-          <div class="section-card">
+          <!-- <div class="section-card">
             <h3>SEO</h3>
             <div class="field">
               <label class="label">Slug URL</label>
               <input v-model="form.slug" class="input font-mono" placeholder="tu-dong-tao" />
               <p class="slug-hint">/san-pham/<span>{{ form.slug || 'slug' }}</span></p>
             </div>
-          </div>
+          </div> -->
         </div>
-
+        
         <!-- Actions -->
         <div class="form-col-full">
           <div class="form-footer">
@@ -139,8 +152,9 @@
             <div class="form-footer-right">
               <button type="button" @click="saveAsDraft" class="btn btn-outline">Lưu nháp</button>
               <button type="submit" :disabled="submitting" class="btn btn-primary btn-min">
-                <svg v-if="submitting" class="animate-spin" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+                <svg v-if="submitting" class="animate-spin" style="width:16px;height:16px" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
                 </svg>
                 {{ submitting ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Tạo sản phẩm') }}
               </button>
@@ -166,11 +180,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductStore }  from '@/admin/stores/productStore'
 import { useCategoryStore } from '@/admin/stores/categoryStore'
+import { useBrandStore }    from '@/admin/stores/brandStore'   // ← thêm
 
-const route     = useRoute()
-const router    = useRouter()
-const store     = useProductStore()
-const catStore  = useCategoryStore()
+const route      = useRoute()
+const router     = useRouter()
+const store      = useProductStore()
+const catStore   = useCategoryStore()
+const brandStore = useBrandStore()                             // ← thêm
 
 const isEdit     = computed(() => !!route.params.id)
 const submitting = ref(false)
@@ -180,9 +196,11 @@ const selectedFiles  = ref<File[]>([])
 const previewImages  = ref<string[]>([])
 
 const form = ref({
-  name: '', slug: '', sku: '', brand: '', description: '',
+  name: '', slug: '', sku: '',
+  brand_id: '' as number | string,          // ← đổi từ brand
+  description: '',
   price: 0, original_price: 0, stock: 0,
-  category_id: '' as number | string,
+  categories_id: '' as number | string,     // ← đổi từ category_id
   status: 'active' as 'active' | 'draft' | 'hidden',
   is_featured: false,
 })
@@ -252,6 +270,8 @@ function showToast(msg: string, type: string) {
 
 onMounted(async () => {
   await catStore.fetchAll()
+  await brandStore.fetchAll()                                  // ← thêm
+
   if (isEdit.value) {
     const existing = store.getById(Number(route.params.id))
     if (existing) {

@@ -71,4 +71,7 @@ export const brandApi = {
     })
   },
   delete:  (id: number) => api.delete(`/admin/brands/${id}`),
+
 }
+
+

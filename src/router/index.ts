@@ -18,7 +18,8 @@ const UserList = () => import('@/admin/views/UserList.vue')
 
 // Giữ UserLayout của bạn nếu đã có, hoặc để router-view
 // const UserLayout     = () => import('@/user/layouts/UserLayout.vue')
-
+const UserLayout     = () => import('@/user/layouts/UserLayout.vue')
+const HomeView       = () => import('@/user/views/HomeView.vue')
 export default createRouter({
   history: createWebHistory(),
   routes: [
@@ -68,9 +69,9 @@ export default createRouter({
     // ── USER / FRONTEND ─────────────────────
     {
       path: '/',
-      // component: UserLayout,
+      component: UserLayout,
       children: [
-        // Giữ nguyên các route user của bạn ở đây
+        { path: '',         component: HomeView, name: 'home' },
       ],
     },
 

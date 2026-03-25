@@ -20,7 +20,6 @@
         <!-- Banner slider -->
         <div class="u-banner">
           <div class="u-banner-slider">
-
             <button class="u-slider-btn prev" @click="prevBanner">‹</button>
             <button class="u-slider-btn next" @click="nextBanner">›</button>
             <div class="u-slider-dots">
@@ -50,6 +49,13 @@
       </div>
     </section>
 
+    <!-- Toast thông báo -->
+    <transition name="toast-fade">
+      <div v-if="toast.show" :class="['u-toast', toast.type]">
+        {{ toast.message }}
+      </div>
+    </transition>
+
     <!-- ── FLASH SALE ─────────────────────────────────────────── -->
     <div class="u-container">
       <div class="u-flash-section">
@@ -70,7 +76,7 @@
           </div>
         </div>
         <div class="u-flash-body">
-          <ProductSlider :products="flashProducts" :show-stock="true" />
+          <ProductSlider :products="flashProducts" :show-stock="true" @add-to-cart="handleAddToCart" />
         </div>
       </div>
 
@@ -84,7 +90,7 @@
           <span class="u-section-title">{{ sec.title }}</span>
         </div>
         <div class="u-section-body">
-          <ProductSlider :products="sec.products" />
+          <ProductSlider :products="sec.products" @add-to-cart="handleAddToCart" />
         </div>
       </div>
 
@@ -94,9 +100,49 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, h, defineComponent } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCartStore } from '@/user/stores/cartStore'
+import { useAuthStore } from '@/user/stores/authStore'
 
 const cartStore = useCartStore()
+const authStore = useAuthStore()
+const router    = useRouter()
+
+/* ── Toast notification ─────────────────────────────────────────── */
+const toast = ref({ show: false, message: '', type: 'success' })
+let toastTimer: ReturnType<typeof setTimeout>
+
+function showToast(message: string, type: 'success' | 'error' | 'warning' = 'success') {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, message, type }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 2800)
+}
+
+/* ── Xử lý thêm vào giỏ hàng ───────────────────────────────────── */
+async function handleAddToCart(p: Prod) {
+  // Chưa đăng nhập → hiện toast cảnh báo
+  // Dùng router.resolve để kiểm tra route 'login' có tồn tại không trước khi push
+  // Tránh bị wildcard redirect sang /admin
+  if (!authStore.token) {
+    showToast('⚠️ Vui lòng đăng nhập để thêm vào giỏ hàng!', 'warning')
+    setTimeout(() => {
+      const loginRoute = router.resolve({ name: 'login' })
+      if (loginRoute.name !== '/:pathMatch(.*)*') {
+        router.push({ name: 'login' })
+      }
+      // Nếu chưa có trang login thì giữ nguyên, không redirect lung tung
+    }, 1200)
+    return
+  }
+
+  try {
+    // Dùng String(p.id) làm SKU tạm — thay bằng p.skuCode khi có API thật
+    await cartStore.addToCart(String(p.id))
+    showToast(`✅ Đã thêm "${p.name}" vào giỏ hàng!`, 'success')
+  } catch {
+    showToast('❌ Không thể thêm vào giỏ hàng. Vui lòng thử lại.', 'error')
+  }
+}
 
 /* ── ProductSlider component (inline) ─────────────────────────── */
 interface Prod {
@@ -114,13 +160,18 @@ const ProductSlider = defineComponent({
     products:  { type: Array as () => Prod[], required: true },
     showStock: { type: Boolean, default: false },
   },
-  setup(props) {
-    const rowRef = ref<HTMLElement | null>(null)
-    const slideL = () => { if (rowRef.value) rowRef.value.scrollLeft -= 320 }
-    const slideR = () => { if (rowRef.value) rowRef.value.scrollLeft += 320 }
-    const fmt = (n: number) => n.toLocaleString('vi-VN')
-    const fallback = (e: Event) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x200/e8f5e9/2d8c4e?text=SP' }
-    const addCart  = (p: Prod) => { console.log('addToCart', p.id) /* TODO: cartStore.addToCart(skuCode) */ }
+  emits: ['add-to-cart'],
+  setup(props, { emit }) {
+    const rowRef   = ref<HTMLElement | null>(null)
+    const slideL   = () => { if (rowRef.value) rowRef.value.scrollLeft -= 320 }
+    const slideR   = () => { if (rowRef.value) rowRef.value.scrollLeft += 320 }
+    const fmt      = (n: number) => n.toLocaleString('vi-VN')
+    const fallback = (e: Event) => {
+      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x200/e8f5e9/2d8c4e?text=SP'
+    }
+
+    // Emit sự kiện lên HomeView để xử lý — KHÔNG xử lý trực tiếp trong đây
+    const addCart = (p: Prod) => emit('add-to-cart', p)
 
     return () => h('div', { class: 'u-pslider' }, [
       h('button', { class: 'u-pslider-arrow left',  onClick: slideL }, '‹'),
@@ -131,7 +182,11 @@ const ProductSlider = defineComponent({
             h('div', { class: 'u-card-img' }, [
               h('img', { src: p.image, alt: p.name, onError: fallback }),
               h('div', { class: 'u-card-overlay' }, [
-                h('button', { class: 'u-overlay-btn', onClick: () => addCart(p) }, '🛒'),
+                h('button', {
+                  class: 'u-overlay-btn',
+                  title: 'Thêm vào giỏ hàng',
+                  onClick: () => addCart(p),
+                }, '🛒'),
               ]),
             ]),
             h('div', { class: 'u-card-info' }, [
@@ -158,9 +213,9 @@ const ProductSlider = defineComponent({
 /* ── Banner ─────────────────────────────────────────────────────── */
 const currentBanner = ref(0)
 const banners = [
-  { tag: 'Ưu đãi đặc biệt',  title: 'Máy lạnh Inverter tiết kiệm điện',   subtitle: 'Giảm đến 30% — Bảo hành 2 năm chính hãng',   bg: 'linear-gradient(135deg,#1a5c2e 0%,#2d8c4e 100%)' },
-  { tag: 'Hàng mới về',       title: 'Thiết bị điện thông minh 2025',      subtitle: 'Nhà thông minh — Giá cực ưu đãi',            bg: 'linear-gradient(135deg,#0b3d6b 0%,#1a6fa8 100%)' },
-  { tag: 'Flash Sale hôm nay', title: 'Quạt điện, quạt trần giá sốc',     subtitle: 'Hàng trăm sản phẩm giảm đến 50%',           bg: 'linear-gradient(135deg,#7b0e0e 0%,#c0392b 100%)' },
+  { tag: 'Ưu đãi đặc biệt',   title: 'Máy lạnh Inverter tiết kiệm điện',  subtitle: 'Giảm đến 30% — Bảo hành 2 năm chính hãng',  bg: 'linear-gradient(135deg,#1a5c2e 0%,#2d8c4e 100%)' },
+  { tag: 'Hàng mới về',        title: 'Thiết bị điện thông minh 2025',     subtitle: 'Nhà thông minh — Giá cực ưu đãi',           bg: 'linear-gradient(135deg,#0b3d6b 0%,#1a6fa8 100%)' },
+  { tag: 'Flash Sale hôm nay', title: 'Quạt điện, quạt trần giá sốc',     subtitle: 'Hàng trăm sản phẩm giảm đến 50%',          bg: 'linear-gradient(135deg,#7b0e0e 0%,#c0392b 100%)' },
 ]
 const nextBanner = () => { currentBanner.value = (currentBanner.value + 1) % banners.length }
 const prevBanner = () => { currentBanner.value = (currentBanner.value - 1 + banners.length) % banners.length }
@@ -181,19 +236,17 @@ function startCountdown() {
   }, 1000)
 }
 
-/* ── Static data (thay bằng API sau) ────────────────────────────── */
+/* ── Static data ────────────────────────────────────────────────── */
 const sidebarCats = [
-  { icon: '', name: 'Điều hòa, làm lạnh',    slug: 'dieu-hoa' },
-  { icon: '', name: 'Điện tủ, tủ lạnh',       slug: 'tu-lanh' },
-  { icon: '', name: 'Đồ dùng nhà bếp',        slug: 'nha-bep' },
-  { icon: '', name: 'Quạt điện, quạt trần',   slug: 'quat-dien' },
-  { icon: '', name: 'Thiết bị điện',           slug: 'thiet-bi-dien' },
-  { icon: '', name: 'Nhà thông minh',          slug: 'nha-thong-minh' },
-  { icon: '', name: 'Dây cáp điện',            slug: 'day-cap' },
-  { icon: '', name: 'Sản phẩm khác',           slug: 'khac' },
+  { icon: '', name: 'Điều hòa, làm lạnh',   slug: 'dieu-hoa' },
+  { icon: '', name: 'Điện tủ, tủ lạnh',     slug: 'tu-lanh' },
+  { icon: '', name: 'Đồ dùng nhà bếp',      slug: 'nha-bep' },
+  { icon: '', name: 'Quạt điện, quạt trần', slug: 'quat-dien' },
+  { icon: '', name: 'Thiết bị điện',         slug: 'thiet-bi-dien' },
+  { icon: '', name: 'Nhà thông minh',        slug: 'nha-thong-minh' },
+  { icon: '', name: 'Dây cáp điện',          slug: 'day-cap' },
+  { icon: '', name: 'Sản phẩm khác',         slug: 'khac' },
 ]
-
-const brands = ['Panasonic', 'Samsung', 'LG', 'Midea', 'Daikin', 'Rapido', 'Philips', 'Toshiba', 'Sharp', 'Mitsubishi']
 
 const PLACEHOLDER = 'https://via.placeholder.com/200x200/e8f5e9/2d8c4e?text=SP'
 
@@ -211,25 +264,51 @@ const mkProds = (name: string, n: number, base: number, discount = false): Prod[
 const flashProducts = mkProds('Sản phẩm Flash Sale', 8, 150000, true)
 
 const sections = [
-  { id: 's1', slug: 'dieu-hoa',       title: 'Hàng cao cấp',           gradient: 'linear-gradient(90deg,#1a5c2e,#2d8c4e)', products: mkProds('Máy lạnh cao cấp',    6, 8000000) },
-  { id: 's2', slug: 'tu-lanh',        title: 'Điện tử, điện lạnh',     gradient: 'linear-gradient(90deg,#1b4f72,#2980b9)', products: mkProds('Quạt điều hòa',       6, 3500000) },
-  { id: 's3', slug: 'nha-bep',        title: 'Gia dụng, khỏe & đẹp',  gradient: 'linear-gradient(90deg,#7b241c,#c0392b)', products: mkProds('Ấm điện siêu tốc',    6, 150000)  },
-  { id: 's4', slug: 'thiet-bi-dien',  title: 'Thiết bị điện',          gradient: 'linear-gradient(90deg,#4a235a,#8e44ad)', products: mkProds('Bảng công tắc',       6, 90000)   },
-  { id: 's5', slug: 'quat-dien',      title: 'Quạt điện, quạt trần',   gradient: 'linear-gradient(90deg,#1a5276,#2471a3)', products: mkProds('Quạt bàn Hali',       6, 190000)  },
-  { id: 's6', slug: 'chieu-sang',     title: 'Thiết bị chiếu sáng',    gradient: 'linear-gradient(90deg,#7d6608,#d4ac0d)', products: mkProds('Bảng điều khiển',     6, 45000)   },
-  { id: 's7', slug: 'nha-thong-minh', title: 'Nhà thông minh',         gradient: 'linear-gradient(90deg,#0b5345,#1abc9c)', products: mkProds('Bộ cảm biến',         6, 380000)  },
-  { id: 's8', slug: 'day-cap',        title: 'Dây cáp điện',           gradient: 'linear-gradient(90deg,#4d0000,#922b21)', products: mkProds('Dây cáp điện',        6, 90000)   },
-  { id: 's9', slug: 'khac',           title: 'Sản phẩm khác',          gradient: 'linear-gradient(90deg,#2c3e50,#4d6474)', products: mkProds('Bình giữ nhiệt',      6, 250000)  },
+  { id: 's1', slug: 'dieu-hoa',       title: 'Hàng cao cấp',          gradient: 'linear-gradient(90deg,#1a5c2e,#2d8c4e)', products: mkProds('Máy lạnh cao cấp',  6, 8000000) },
+  { id: 's2', slug: 'tu-lanh',        title: 'Điện tử, điện lạnh',    gradient: 'linear-gradient(90deg,#1b4f72,#2980b9)', products: mkProds('Quạt điều hòa',     6, 3500000) },
+  { id: 's3', slug: 'nha-bep',        title: 'Gia dụng, khỏe & đẹp', gradient: 'linear-gradient(90deg,#7b241c,#c0392b)', products: mkProds('Ấm điện siêu tốc',  6, 150000)  },
+  { id: 's4', slug: 'thiet-bi-dien',  title: 'Thiết bị điện',         gradient: 'linear-gradient(90deg,#4a235a,#8e44ad)', products: mkProds('Bảng công tắc',     6, 90000)   },
+  { id: 's5', slug: 'quat-dien',      title: 'Quạt điện, quạt trần',  gradient: 'linear-gradient(90deg,#1a5276,#2471a3)', products: mkProds('Quạt bàn Hali',     6, 190000)  },
+  { id: 's6', slug: 'chieu-sang',     title: 'Thiết bị chiếu sáng',   gradient: 'linear-gradient(90deg,#7d6608,#d4ac0d)', products: mkProds('Bảng điều khiển',   6, 45000)   },
+  { id: 's7', slug: 'nha-thong-minh', title: 'Nhà thông minh',        gradient: 'linear-gradient(90deg,#0b5345,#1abc9c)', products: mkProds('Bộ cảm biến',       6, 380000)  },
+  { id: 's8', slug: 'day-cap',        title: 'Dây cáp điện',          gradient: 'linear-gradient(90deg,#4d0000,#922b21)', products: mkProds('Dây cáp điện',      6, 90000)   },
+  { id: 's9', slug: 'khac',           title: 'Sản phẩm khác',         gradient: 'linear-gradient(90deg,#2c3e50,#4d6474)', products: mkProds('Bình giữ nhiệt',    6, 250000)  },
 ]
 
 /* ── Lifecycle ──────────────────────────────────────────────────── */
 onMounted(() => {
   startCountdown()
   bannerTimer = setInterval(nextBanner, 4000)
-  // TODO: Khi có backend → cartStore.fetchCart() nếu user đã login
 })
 onUnmounted(() => {
   clearInterval(cdTimer)
   clearInterval(bannerTimer)
+  clearTimeout(toastTimer)
 })
 </script>
+
+<style scoped>
+/* ── Toast ── */
+.u-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 13px 28px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,0,0,.18);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.u-toast.success { background: #2e7d32; color: #fff; }
+.u-toast.error   { background: #c62828; color: #fff; }
+.u-toast.warning { background: #e65100; color: #fff; }
+
+.toast-fade-enter-active,
+.toast-fade-leave-active { transition: opacity .3s, transform .3s; }
+.toast-fade-enter-from,
+.toast-fade-leave-to    { opacity: 0; transform: translateX(-50%) translateY(16px); }
+</style>

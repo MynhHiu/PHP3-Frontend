@@ -1,8 +1,6 @@
 // src/user/stores/cartStore.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import api from '@/api'
-import { useAuthStore } from './authStore'
 
 export interface CartItem {
   id: number
@@ -16,69 +14,72 @@ export interface CartItem {
   }
 }
 
+function getCart(): CartItem[] {
+  try { return JSON.parse(localStorage.getItem('mock_cart') || '[]') }
+  catch { return [] }
+}
+function saveCart(cart: CartItem[]) {
+  localStorage.setItem('mock_cart', JSON.stringify(cart))
+}
+
 export const useCartStore = defineStore('cart', () => {
-  const items   = ref<CartItem[]>([])
+  const items   = ref<CartItem[]>(getCart())
   const loading = ref(false)
   const error   = ref<string | null>(null)
 
   const totalItems = computed(() =>
     items.value.reduce((sum, i) => sum + i.quantity, 0)
   )
-
   const totalPrice = computed(() =>
     items.value.reduce((sum, i) => sum + (i.product?.price ?? 0) * i.quantity, 0)
   )
 
-  function authHeader() {
-    const token = useAuthStore().token
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }
-
   // ── Lấy giỏ hàng ────────────────────────────────────────────
   async function fetchCart() {
-    loading.value = true
-    error.value   = null
-    try {
-      const res  = await api.get('/user/cart', { headers: authHeader() })
-      items.value = res.data.data ?? res.data
-    } catch (err: any) {
-      error.value = err.userMessage || 'Không thể tải giỏ hàng'
-    } finally {
-      loading.value = false
-    }
+    items.value = getCart()
   }
 
   // ── Thêm vào giỏ ────────────────────────────────────────────
-  async function addToCart(skuCode: string, quantity = 1) {
-    const res = await api.post(
-      '/user/cart',
-      { product_sku_code: skuCode, quantity },
-      { headers: authHeader() }
-    )
-    await fetchCart()
-    return res.data
+  async function addToCart(skuCode: string, quantity = 1, productInfo?: CartItem['product']) {
+    const cart    = getCart()
+    const existing = cart.find(i => i.product_sku_code === skuCode)
+
+    if (existing) {
+      existing.quantity += quantity
+    } else {
+      cart.push({
+        id:               Date.now(),
+        product_sku_code: skuCode,
+        quantity,
+        user_id:          0,
+        product:          productInfo,
+      })
+    }
+
+    saveCart(cart)
+    items.value = cart
   }
 
   // ── Cập nhật số lượng ────────────────────────────────────────
   async function updateQuantity(cartItemId: number, quantity: number) {
     if (quantity <= 0) return removeItem(cartItemId)
-    await api.put(
-      `/user/cart/${cartItemId}`,
-      { quantity },
-      { headers: authHeader() }
-    )
-    const item = items.value.find(i => i.id === cartItemId)
+    const cart = getCart()
+    const item = cart.find(i => i.id === cartItemId)
     if (item) item.quantity = quantity
+    saveCart(cart)
+    items.value = cart
   }
 
   // ── Xoá item ─────────────────────────────────────────────────
   async function removeItem(cartItemId: number) {
-    await api.delete(`/user/cart/${cartItemId}`, { headers: authHeader() })
-    items.value = items.value.filter(i => i.id !== cartItemId)
+    const cart = getCart().filter(i => i.id !== cartItemId)
+    saveCart(cart)
+    items.value = cart
   }
 
   // ── Xoá hết giỏ ─────────────────────────────────────────────
   function clearCart() {
+    saveCart([])
     items.value = []
   }
 

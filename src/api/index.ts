@@ -74,4 +74,87 @@ export const brandApi = {
 
 }
 
+// ── Product Variants ──────────────────────────
+export const variantApi = {
+  // CRUD variant
+  getVariants:   (productId: number) =>
+    api.get(`/admin/products/${productId}/variants`),
+  createVariant: (productId: number, data: {
+    variant_name: string   // VARCHAR(255)
+    product_id: number     // INT(11)
+  }) => api.post(`/admin/products/${productId}/variants`, data),
+  updateVariant: (id: number, data: { variant_name: string }) =>
+    api.put(`/admin/variants/${id}`, data),
+  deleteVariant: (id: number) => api.delete(`/admin/variants/${id}`),
+ 
+  // CRUD variant_options — cột: id, product_variant_id, option_values (INT), created_at
+  getOptions:    (variantId: number) =>
+    api.get(`/admin/variants/${variantId}/options`),
+  createOption:  (variantId: number, data: {
+    product_variant_id: number  // INT(11)
+    option_values: number        // INT(11) — database lưu số
+  }) => api.post(`/admin/variants/${variantId}/options`, data),
+  updateOption:  (id: number, data: { option_values: number }) =>
+    api.put(`/admin/variant-options/${id}`, data),
+  deleteOption:  (id: number) => api.delete(`/admin/variant-options/${id}`),
+ 
+  // CRUD product_skus — cột: sku_code, product_id, price, quantity, status, created_at, updated_at
+  getSkus:   (productId: number) =>
+    api.get(`/admin/products/${productId}/skus`),
+  createSku: (productId: number, data: {
+    sku_code: string        // VARCHAR(255)
+    product_id: number      // INT(11)
+    price: number           // DECIMAL(10,2)
+    quantity: number        // INT(11)
+    status: string          // VARCHAR(50)
+  }) => api.post(`/admin/products/${productId}/skus`, data),
+  updateSku: (skuCode: string, data: Partial<{
+    price: number
+    quantity: number
+    status: string
+  }>) => api.put(`/admin/skus/${skuCode}`, data),
+  deleteSku: (skuCode: string) => api.delete(`/admin/skus/${skuCode}`),
+ 
+  // CRUD product_combination_options — cột: id, options_id, sku_code, created_at
+  getCombinationOptions: (skuCode: string) =>
+    api.get(`/admin/skus/${skuCode}/combination-options`),
+  createCombinationOption: (data: {
+    options_id: number  // INT(11) FK → variant_options.id
+    sku_code: string    // VARCHAR(255) FK → product_skus.sku_code
+  }) => api.post('/admin/combination-options', data),
+  deleteCombinationOption: (id: number) =>
+    api.delete(`/admin/combination-options/${id}`),
+ 
+  // Trang VariantAssign: lấy danh sách tất cả variant (không lọc theo product)
+  getAllVariants: (params = {}) =>
+    api.get('/admin/variants', { params }),
+ 
+  // Gán variant vào product (dùng trong trang VariantAssign)
+  assignVariantToProduct: (productId: number, variantId: number) =>
+    api.post(`/admin/products/${productId}/variants/assign`, { variant_id: variantId }),
+}
+
+// ── Orders ────────────────────────────────────
+export const orderApi = {
+  getAll:    (params = {}) => api.get('/admin/orders', { params }),
+  getOne:    (id: number)  => api.get(`/admin/orders/${id}`),
+  updateStatus: (id: number, status: string) => api.patch(`/admin/orders/${id}/status`, { status }),
+}
+
+// ── Users ─────────────────────────────────────
+export const userApi = {
+  getAll:  (params = {}) => api.get('/admin/users', { params }),
+  getOne:  (id: number)  => api.get(`/admin/users/${id}`),
+  create:  (data: FormData) => api.post('/admin/users', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update:  (id: number, data: FormData) => {
+    data.append('_method', 'PUT')
+    return api.post(`/admin/users/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  delete:  (id: number) => api.delete(`/admin/users/${id}`),
+  toggleStatus: (id: number) => api.patch(`/admin/users/${id}/toggle-status`),
+}
 

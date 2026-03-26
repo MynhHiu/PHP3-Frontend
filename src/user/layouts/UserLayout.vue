@@ -8,31 +8,45 @@
       <div class="u-header-main">
         <div class="u-container u-header-main-inner">
           <router-link to="/" class="u-logo">
-            <div>
-              <span class="u-logo-name">Green</span>
-              <span class="u-logo-sub">Electric</span>
+            <!-- Logo -->
+            <div class="sidebar-logo">
+              <div class="logo-wrapper">
+                <img :src="logoImage" alt="My Logo" class="logo" />
+              </div>
             </div>
           </router-link>
 
           <div class="u-search">
-            <input
-              class="u-search-input"
-              type="text"
-              v-model="searchQuery"
-              placeholder="Tìm sản phẩm..."
-              @keyup.enter="goSearch"
-            />
-            <button class="u-search-btn" @click="goSearch"><IconSearch /></button>
+            <input class="u-search-input" type="text" v-model="searchQuery" placeholder="Tìm sản phẩm..."
+              @keyup.enter="goSearch" />
+            <button class="u-search-btn" @click="goSearch">
+              <IconSearch />
+            </button>
           </div>
 
           <div class="u-header-actions">
-            <router-link :to="authStore.isLoggedIn ? '/profile' : '/login'" class="u-action">
-              <span class="u-action-icon"><IconUser /></span>
+            <!-- Tài khoản -->
+            <router-link :to="authStore.isLoggedIn ? { name: 'profile' } : { name: 'login' }" class="u-action">
+              <span class="u-action-icon">
+                <IconUser />
+              </span>
               <span>{{ authStore.isLoggedIn ? authStore.user?.fullname?.split(' ').pop() : 'Đăng nhập' }}</span>
             </router-link>
+
+            <!-- Nút Đăng xuất (chỉ hiện khi đã đăng nhập) -->
+            <button v-if="authStore.isLoggedIn" class="u-action u-action-logout" @click="handleLogout">
+              <span class="u-action-icon">
+                <IconLogout />
+              </span>
+              <span>Đăng xuất</span>
+            </button>
+
+            <!-- Giỏ hàng -->
             <router-link to="/cart" class="u-action">
               <div class="u-cart-icon-wrap">
-                <span class="u-action-icon"><IconCart /></span>
+                <span class="u-action-icon">
+                  <IconCart />
+                </span>
                 <span v-if="cartStore.totalItems > 0" class="u-cart-badge">{{ cartStore.totalItems }}</span>
               </div>
               <span>Giỏ hàng</span>
@@ -46,10 +60,8 @@
         <div class="u-container">
           <ul class="u-nav-list">
             <li v-for="item in navItems" :key="item.to">
-              <router-link
-                :to="item.to"
-                :class="['u-nav-link', item.highlight && 'u-nav-highlight']"
-              >{{ item.label }}</router-link>
+              <router-link :to="item.to" :class="['u-nav-link', item.highlight && 'u-nav-highlight']">{{ item.label
+              }}</router-link>
             </li>
           </ul>
         </div>
@@ -120,12 +132,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h } from 'vue'
+import { ref, h, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/user/stores/authStore'
 import { useCartStore } from '@/user/stores/cartStore'
+import logoImage from '@/assets/image/image-removebg-preview.png'
 
-const router    = useRouter()
+onMounted(() => {
+  authStore.init()
+})
+
+async function handleLogout() {
+  await authStore.logout()
+  router.push('/login')
+}
+
+const IconLogout = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4' }), h('polyline', { points: '16 17 21 12 16 7' }), h('line', { x1: '21', y1: '12', x2: '9', y2: '12' })]) }
+
+const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 
@@ -136,17 +160,17 @@ const goSearch = () => {
 }
 
 const navItems = [
-  { label: 'Trang chủ',   to: '/' },
-  { label: 'Sản phẩm',    to: '/products' },
+  { label: 'Trang chủ', to: '/' },
+  { label: 'Sản phẩm', to: '/products' },
   { label: 'Thương hiệu', to: '/brands' },
-  { label: 'Khuyến mãi',  to: '/promotions', highlight: true },
-  { label: 'Tin tức',     to: '/news' },
-  { label: 'Liên hệ',     to: '/contact' },
+  { label: 'Khuyến mãi', to: '/promotions', highlight: true },
+  { label: 'Tin tức', to: '/news' },
+  { label: 'Liên hệ', to: '/contact' },
 ]
 
 // Inline SVG Icons
-const IconMapPin = { render: () => h('svg', { viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':'2', style:'width:12px;height:12px;display:inline;vertical-align:middle' }, [h('path',{d:'M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z'}),h('circle',{cx:'12',cy:'10',r:'3'})]) }
-const IconSearch = { render: () => h('svg', { viewBox:'0 0 24 24', fill:'none', stroke:'#fff', 'stroke-width':'2.5', style:'width:18px;height:18px' }, [h('circle',{cx:'11',cy:'11',r:'8'}),h('line',{x1:'21',y1:'21',x2:'16.65',y2:'16.65'})]) }
-const IconUser   = { render: () => h('svg', { viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':'2', style:'width:22px;height:22px' }, [h('path',{d:'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2'}),h('circle',{cx:'12',cy:'7',r:'4'})]) }
-const IconCart   = { render: () => h('svg', { viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':'2', style:'width:22px;height:22px' }, [h('circle',{cx:'9',cy:'21',r:'1'}),h('circle',{cx:'20',cy:'21',r:'1'}),h('path',{d:'M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6'})]) }
+const IconMapPin = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:12px;height:12px;display:inline;vertical-align:middle' }, [h('path', { d: 'M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z' }), h('circle', { cx: '12', cy: '10', r: '3' })]) }
+const IconSearch = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', 'stroke-width': '2.5', style: 'width:18px;height:18px' }, [h('circle', { cx: '11', cy: '11', r: '8' }), h('line', { x1: '21', y1: '21', x2: '16.65', y2: '16.65' })]) }
+const IconUser = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2' }), h('circle', { cx: '12', cy: '7', r: '4' })]) }
+const IconCart = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('circle', { cx: '9', cy: '21', r: '1' }), h('circle', { cx: '20', cy: '21', r: '1' }), h('path', { d: 'M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' })]) }
 </script>

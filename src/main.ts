@@ -9,3 +9,7 @@ createApp(App)
   .use(createPinia())
   .use(router)                // <--- quan trọng
   .mount('#app')
+
+import { useAuthStore } from '@/user/stores/authStore'
+const authStore = useAuthStore()
+authStore.init()

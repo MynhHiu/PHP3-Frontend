@@ -8,11 +8,11 @@
       <span class="active">Thanh toán</span>
     </div>
 
-    <h1 class="page-title">💳 Thanh toán</h1>
+    <h1 class="page-title">Thanh toán</h1>
 
     <!-- Đặt hàng thành công -->
     <div v-if="orderSuccess" class="success-box">
-      <div class="success-icon">🎉</div>
+      <div class="success-icon"></div>
       <h2>Đặt hàng thành công!</h2>
       <p>Mã đơn hàng: <strong>#{{ successOrderId }}</strong></p>
       <p class="success-sub">Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ sớm nhất.</p>
@@ -28,7 +28,7 @@
 
         <!-- Thông tin giao hàng -->
         <div class="form-section">
-          <h3 class="section-title">📦 Thông tin giao hàng</h3>
+          <h3 class="section-title">Thông tin giao hàng</h3>
           <div class="form-grid">
             <div class="form-group full">
               <label>Họ và tên <span class="req">*</span></label>
@@ -55,7 +55,7 @@
 
         <!-- Phương thức thanh toán -->
         <div class="form-section">
-          <h3 class="section-title">💰 Phương thức thanh toán</h3>
+          <h3 class="section-title">Phương thức thanh toán</h3>
           <div class="payment-options">
             <label v-for="opt in paymentOptions" :key="opt.value"
               :class="['payment-opt', { active: form.payment === opt.value }]">
@@ -74,7 +74,7 @@
 
       <!-- Cột phải: Tóm tắt đơn hàng -->
       <div class="order-summary">
-        <h3 class="section-title">🛒 Đơn hàng của bạn</h3>
+        <h3 class="section-title">Đơn hàng của bạn</h3>
 
         <div class="order-items">
           <div v-for="item in checkoutItems" :key="item.id" class="order-item">
@@ -178,10 +178,10 @@ const form = ref({
 })
 
 const paymentOptions = [
-  { value: 'cod',      icon: '🚚', name: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền mặt khi nhận được hàng' },
-  { value: 'banking',  icon: '🏦', name: 'Chuyển khoản ngân hàng',          desc: 'Chuyển khoản trước khi giao hàng' },
-  { value: 'momo',     icon: '💜', name: 'Ví MoMo',                          desc: 'Thanh toán qua ví MoMo' },
-  { value: 'vnpay',    icon: '💳', name: 'VNPay / Thẻ ATM',                  desc: 'Thanh toán qua VNPay, thẻ nội địa' },
+  { value: 'cod',      icon: '', name: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền mặt khi nhận được hàng' },
+  { value: 'banking',  icon: '', name: 'Chuyển khoản ngân hàng',          desc: 'Chuyển khoản trước khi giao hàng' },
+  { value: 'momo',     icon: '', name: 'Ví MoMo',                          desc: 'Thanh toán qua ví MoMo' },
+  { value: 'vnpay',    icon: '', name: 'VNPay / Thẻ ATM',                  desc: 'Thanh toán qua VNPay, thẻ nội địa' },
 ]
 
 const fmt = (v: number) => v.toLocaleString('vi-VN')

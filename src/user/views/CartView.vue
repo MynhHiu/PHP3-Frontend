@@ -6,7 +6,7 @@
       <span class="active">Giỏ hàng</span>
     </div>
 
-    <h1 class="page-title">🛒 Giỏ hàng của bạn</h1>
+    <h1 class="page-title">Giỏ hàng của bạn</h1>
 
     <div v-if="cartStore.loading" class="loading-state">
       <div class="spinner"></div>
@@ -14,7 +14,7 @@
     </div>
 
     <div v-else-if="cartStore.items.length === 0" class="empty-cart">
-      <div class="empty-icon">🛒</div>
+      <div class="empty-icon"></div>
       <p>Giỏ hàng của bạn đang trống</p>
       <router-link to="/" class="btn-continue">Tiếp tục mua sắm</router-link>
     </div>
@@ -26,7 +26,7 @@
             <input type="checkbox" :checked="selectAll" @change="toggleAll" />
             <span>Chọn tất cả ({{ cartStore.items.length }} sản phẩm)</span>
           </label>
-          <button class="btn-delete-selected" @click="deleteSelected">🗑 Xóa đã chọn</button>
+          <button class="btn-delete-selected" @click="deleteSelected">Xóa đã chọn</button>
         </div>
 
         <div v-for="item in cartStore.items" :key="item.id" class="cart-item">

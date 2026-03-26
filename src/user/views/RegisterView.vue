@@ -24,7 +24,7 @@
         <div class="form-group">
           <label>Họ và tên</label>
           <div class="input-wrap">
-            <span class="input-icon">👤</span>
+            <span class="input-icon"></span>
             <input v-model="regForm.fullname" type="text" placeholder="Nguyễn Văn A"
               required :disabled="loading" />
           </div>
@@ -32,7 +32,7 @@
         <div class="form-group">
           <label>Email</label>
           <div class="input-wrap">
-            <span class="input-icon">✉</span>
+            <span class="input-icon"></span>
             <input v-model="regForm.email" type="email" placeholder="example@email.com"
               required :disabled="loading" />
           </div>
@@ -40,7 +40,7 @@
         <div class="form-group">
           <label>Số điện thoại</label>
           <div class="input-wrap">
-            <span class="input-icon">📱</span>
+            <span class="input-icon"></span>
             <input v-model="regForm.phone" type="tel" placeholder="0901234567"
               required :disabled="loading" />
           </div>
@@ -48,7 +48,7 @@
         <div class="form-group">
           <label>Địa chỉ <span class="optional">(tùy chọn)</span></label>
           <div class="input-wrap">
-            <span class="input-icon">📍</span>
+            <span class="input-icon"></span>
             <input v-model="regForm.address" type="text" placeholder="123 Đường ABC, TP. HCM"
               :disabled="loading" />
           </div>
@@ -56,18 +56,18 @@
         <div class="form-group">
           <label>Mật khẩu</label>
           <div class="input-wrap">
-            <span class="input-icon">🔒</span>
+            <span class="input-icon"></span>
             <input v-model="regForm.password" :type="showPwd ? 'text' : 'password'"
               placeholder="Tối thiểu 6 ký tự" required minlength="6" :disabled="loading" />
             <button type="button" class="toggle-pwd" @click="showPwd = !showPwd">
-              {{ showPwd ? '🙈' : '👁' }}
+              {{ showPwd ? 'Ẩn' : 'hiện' }}
             </button>
           </div>
         </div>
         <div class="form-group">
           <label>Xác nhận mật khẩu</label>
           <div class="input-wrap">
-            <span class="input-icon">🔒</span>
+            <span class="input-icon"></span>
             <input v-model="regForm.confirmPassword" :type="showPwd ? 'text' : 'password'"
               placeholder="Nhập lại mật khẩu" required :disabled="loading" />
           </div>
@@ -130,7 +130,7 @@ async function handleRegister() {
     })
     // Đăng xuất ngay sau khi đăng ký xong
     await authStore.logout()
-    showAlert('🎉 Đăng ký thành công! Vui lòng đăng nhập.', 'success')
+    showAlert('Đăng ký thành công! Vui lòng đăng nhập.', 'success')
     setTimeout(() => router.push('/login'), 1500)
   } catch (err: any) {
     showAlert(err.userMessage || 'Đăng ký thất bại. Vui lòng thử lại.')

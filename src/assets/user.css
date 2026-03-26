@@ -36,6 +36,19 @@
   --u-container:     1280px;
 }
 
+/* ── Nút Đăng xuất ── */
+.u-action-logout {
+  background: none;
+  border: 1.5px solid var(--u-red);
+  color: var(--u-red) !important;
+  border-radius: var(--u-radius);
+  font-family: inherit;
+}
+.u-action-logout:hover {
+  background: var(--u-red) !important;
+  color: #fff !important;
+}
+
 body {
   font-family: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
   font-size: 14px;
@@ -49,6 +62,40 @@ a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
 button { font-family: inherit; cursor: pointer; }
 img { display: block; max-width: 100%; }
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  height: 64px;
+  border-bottom: 1px solid var(--gray-100);
+  flex-shrink: 0;
+}
+.sidebar-logo img.logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+.admin-sidebar.collapsed .sidebar-logo img.logo {
+  width: 28px;
+  height: 28px;
+}
+.sidebar-logo-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--brand);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--white); font-weight: 700; font-size: 12px;
+}
+.sidebar-logo-text { overflow: hidden; white-space: nowrap; }
+.sidebar-logo-text .brand-name {
+  font-weight: 700; color: var(--brand); font-size: 13px; line-height: 1.2;
+}
+.sidebar-logo-text .brand-sub {
+  font-size: 10px; color: var(--gray-400); margin-top: 2px;
+}
 
 /* ============================================================
    LAYOUT SHELL

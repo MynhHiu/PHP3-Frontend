@@ -5,12 +5,16 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
+  // KHÔNG có withCredentials
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('admin_token')
+  // Lấy cả 2 token: admin và user
+  const token = localStorage.getItem('admin_token') 
+             || localStorage.getItem('user_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -141,7 +145,7 @@ export const orderApi = {
   updateStatus: (id: number, status: string) => api.patch(`/admin/orders/${id}/status`, { status }),
 }
 
-// ── Users ─────────────────────────────────────
+// ── Users ─────────────────────────────────────────────────────────────────────
 export const userApi = {
   getAll:  (params = {}) => api.get('/admin/users', { params }),
   getOne:  (id: number)  => api.get(`/admin/users/${id}`),
@@ -154,7 +158,40 @@ export const userApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
-  delete:  (id: number) => api.delete(`/admin/users/${id}`),
+  delete:       (id: number) => api.delete(`/admin/users/${id}`),
   toggleStatus: (id: number) => api.patch(`/admin/users/${id}/toggle-status`),
 }
 
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+export const authApi = {
+  register: (data: {
+    fullname: string
+    email: string
+    phone: string
+    password: string
+    address?: string
+  }) =>
+    api.post('/auth/register', data).then(r => r.data),
+
+  login: (email: string, password: string) =>
+    api.post('/auth/login', { email, password }).then(r => r.data),
+
+  logout: () =>
+    api.post('/auth/logout').then(r => r.data),
+
+  sendOtp: (email: string) =>
+    api.post('/auth/send-otp', { email }).then(r => r.data),
+
+  verifyOtp: (email: string, otp: string) =>
+    api.post('/auth/verify-otp', { email, otp }).then(r => r.data),
+
+  resetPassword: (
+    email: string,
+    otp: string,
+    password: string,
+    password_confirmation: string
+  ) =>
+    api.post('/auth/reset-password', {
+      email, otp, password, password_confirmation,
+    }).then(r => r.data),
+}

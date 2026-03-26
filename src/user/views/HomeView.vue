@@ -59,7 +59,7 @@
     <!-- ── FLASH SALE ─────────────────────────────────────────── -->
     <div class="u-container">
       <div class="u-flash-section">
-        <div class="u-flash-header">
+        <!-- <div class="u-flash-header">
           <div class="u-flash-title">
             <span class="u-flash-icon">⚡</span>
             <h2>FLASHSALE GIÁ SỐC</h2>
@@ -74,10 +74,10 @@
               <span class="u-cd-block">{{ cd.s }}</span>
             </div>
           </div>
-        </div>
-        <div class="u-flash-body">
+        </div> -->
+        <!-- <div class="u-flash-body">
           <ProductSlider :products="flashProducts" :show-stock="true" @add-to-cart="handleAddToCart" />
-        </div>
+        </div> -->
       </div>
 
       <!-- ── PRODUCT SECTIONS ──────────────────────────────────── -->

@@ -25,33 +25,42 @@
           </div>
 
           <div class="u-header-actions">
-            <!-- Tài khoản -->
-            <router-link :to="authStore.isLoggedIn ? { name: 'profile' } : { name: 'login' }" class="u-action">
-              <span class="u-action-icon">
-                <IconUser />
-              </span>
-              <span>{{ authStore.isLoggedIn ? authStore.user?.fullname?.split(' ').pop() : 'Đăng nhập' }}</span>
-            </router-link>
+  <div class="u-profile-dropdown">
+    <router-link :to="authStore.isLoggedIn ? { name: 'profile' } : { name: 'login' }" class="u-action">
+      <span class="u-action-icon">
+        <IconUser />
+      </span>
+      <span>{{ authStore.isLoggedIn ? authStore.user?.fullname?.split(' ').pop() : 'Tài khoản' }}</span>
+    </router-link>
 
-            <!-- Nút Đăng xuất (chỉ hiện khi đã đăng nhập) -->
-            <button v-if="authStore.isLoggedIn" class="u-action u-action-logout" @click="handleLogout">
-              <span class="u-action-icon">
-                <IconLogout />
-              </span>
-              <span>Đăng xuất</span>
-            </button>
+    <div v-if="authStore.isLoggedIn" class="u-dropdown-content">
+      <div class="u-dropdown-header">
+        <strong>Chào, {{ authStore.user?.fullname?.split(' ').pop() }}</strong>
+      </div>
+      <router-link :to="{ name: 'profile' }" class="u-dropdown-item">
+        Thông tin cá nhân
+      </router-link>
+      <router-link :to="{ name: 'order-history' }" class="u-dropdown-item">
+        Lịch sử đơn hàng
+      </router-link>
+      <hr class="u-divider" />
+      <button class="u-dropdown-item u-logout-text" @click="handleLogout">
+        <span class="u-action-icon-sm"><IconLogout /></span>
+        Đăng xuất
+      </button>
+    </div>
+  </div>
 
-            <!-- Giỏ hàng -->
-            <router-link to="/cart" class="u-action">
-              <div class="u-cart-icon-wrap">
-                <span class="u-action-icon">
-                  <IconCart />
-                </span>
-                <span v-if="cartStore.totalItems > 0" class="u-cart-badge">{{ cartStore.totalItems }}</span>
-              </div>
-              <span>Giỏ hàng</span>
-            </router-link>
-          </div>
+  <router-link to="/cart" class="u-action">
+    <div class="u-cart-icon-wrap">
+      <span class="u-action-icon">
+        <IconCart />
+      </span>
+      <span v-if="cartStore.totalItems > 0" class="u-cart-badge">{{ cartStore.totalItems }}</span>
+    </div>
+    <span>Giỏ hàng</span>
+  </router-link>
+</div>
         </div>
       </div>
 

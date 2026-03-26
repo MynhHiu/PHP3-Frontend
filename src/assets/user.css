@@ -926,3 +926,80 @@ img { display: block; max-width: 100%; }
 .u-brands-bar {
   margin: 12px 0 20px;
 }
+/* Đảm bảo các Action nằm ngang hàng */
+.u-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Khoảng cách giữa Profile và Giỏ hàng */
+}
+
+/* Container cho Dropdown */
+.u-profile-dropdown {
+  position: relative;
+}
+
+/* Menu nội dung - Quan trọng nhất */
+.u-dropdown-content {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 190px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  padding: 8px 0;
+  z-index: 9999; /* Đảm bảo đè lên thanh Nav xanh */
+  
+  /* Trạng thái ẩn mặc định */
+  display: none; 
+}
+
+/* Hiển thị khi di chuột vào vùng chứa */
+.u-profile-dropdown:hover .u-dropdown-content {
+  display: block;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Định dạng các mục trong menu */
+.u-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #333;
+  text-decoration: none;
+  font-size: 14px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.u-dropdown-item:hover {
+  background: #f4fbf7; /* Màu xanh nhạt nhẹ */
+  color: #2d8c4e;
+}
+
+/* Đường kẻ chia tách */
+.u-divider {
+  border: 0;
+  border-top: 1px solid #eee;
+  margin: 5px 0;
+}
+
+.u-dropdown-header {
+  padding: 5px 16px 10px;
+  font-size: 12px;
+  color: #888;
+  border-bottom: 1px solid #eee;
+}
+
+.u-logout-text {
+  color: #e74c3c !important;
+}

@@ -20,8 +20,6 @@
         <!-- Banner slider -->
         <div class="u-banner">
           <div class="u-banner-slider">
-            <button class="u-slider-btn prev" @click="prevBanner">‹</button>
-            <button class="u-slider-btn next" @click="nextBanner">›</button>
             <div class="u-slider-dots">
               <button
                 v-for="(_, i) in banners" :key="i"

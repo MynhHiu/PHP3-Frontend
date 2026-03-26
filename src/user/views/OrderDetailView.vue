@@ -2,7 +2,7 @@
   <div class="order-detail-page">
 
     <div v-if="!order" class="loading-state">
-      <div class="loading-icon">📦</div>
+      <div class="loading-icon"></div>
       <p>Đang tải đơn hàng...</p>
     </div>
 
@@ -40,7 +40,7 @@
         <!-- Cột trái -->
         <div class="detail-left">
           <div class="detail-card">
-            <h3 class="card-title">🛍 Sản phẩm đã đặt</h3>
+            <h3 class="card-title">Sản phẩm đã đặt</h3>
             <div class="product-list">
               <div v-for="(product, idx) in order.products" :key="idx" class="product-item">
                 <img :src="product.image" :alt="product.name" class="product-img" />
@@ -87,7 +87,7 @@
         <!-- Cột phải -->
         <div class="detail-right">
           <div class="detail-card">
-            <h3 class="card-title">📍 Thông tin giao hàng</h3>
+            <h3 class="card-title">Thông tin giao hàng</h3>
             <div class="info-list">
               <div class="info-row">
                 <span class="info-label">Người nhận:</span>
@@ -109,7 +109,7 @@
           </div>
 
           <div class="detail-card">
-            <h3 class="card-title">📋 Thông tin đơn hàng</h3>
+            <h3 class="card-title">Thông tin đơn hàng</h3>
             <div class="info-list">
               <div class="info-row">
                 <span class="info-label">Mã đơn hàng:</span>
@@ -135,17 +135,17 @@
               v-if="order.status === 'pending'"
               class="btn-action btn-cancel"
               @click="cancelOrder"
-            >❌ Huỷ đơn hàng</button>
+            >Huỷ đơn hàng</button>
             <button
               v-if="order.status === 'delivered'"
               class="btn-action btn-review"
               @click="reviewOrder"
-            >⭐ Đánh giá sản phẩm</button>
+            >Đánh giá sản phẩm</button>
             <button
               v-if="order.status === 'delivered' || order.status === 'cancelled'"
               class="btn-action btn-rebuy"
               @click="rebuyOrder"
-            >🔄 Mua lại</button>
+            >Mua lại</button>
             <button class="btn-action btn-back" @click="$router.push('/order-history')">
               ← Quay lại lịch sử
             </button>
@@ -222,11 +222,11 @@ const order = computed(() => {
 const timeline = computed(() => {
   const status = order.value?.status ?? 'pending'
   const steps = [
-    { key: 'pending',    icon: '📝', label: 'Đặt hàng',  time: order.value?.createdAt   ?? null },
-    { key: 'confirmed',  icon: '✅', label: 'Xác nhận',  time: order.value?.confirmedAt ?? null },
-    { key: 'processing', icon: '🔧', label: 'Đóng gói',  time: null },
-    { key: 'shipping',   icon: '🚚', label: 'Đang giao', time: null },
-    { key: 'delivered',  icon: '🏠', label: 'Đã giao',   time: order.value?.deliveredAt ?? null },
+    { key: 'pending',    icon: '', label: 'Đặt hàng',  time: order.value?.createdAt   ?? null },
+    { key: 'confirmed',  icon: '', label: 'Xác nhận',  time: order.value?.confirmedAt ?? null },
+    { key: 'processing', icon: '', label: 'Đóng gói',  time: null },
+    { key: 'shipping',   icon: '', label: 'Đang giao', time: null },
+    { key: 'delivered',  icon: '', label: 'Đã giao',   time: order.value?.deliveredAt ?? null },
   ]
   const flow = ['pending', 'confirmed', 'processing', 'shipping', 'delivered']
   const currentIdx = flow.indexOf(status)
@@ -238,11 +238,11 @@ const timeline = computed(() => {
 })
 
 const statusLabel = (s: string) => ({
-  pending:    '⏳ Chờ xác nhận',
-  processing: '🔧 Đang xử lý',
-  shipping:   '🚚 Đang giao',
-  delivered:  '✅ Đã giao',
-  cancelled:  '❌ Đã huỷ',
+  pending:    'Chờ xác nhận',
+  processing: 'Đang xử lý',
+  shipping:   'Đang giao',
+  delivered:  'Đã giao',
+  cancelled:  'Đã huỷ',
 }[s] || s)
 
 const formatPrice = (v: number) => v.toLocaleString('vi-VN')

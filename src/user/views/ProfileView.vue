@@ -14,7 +14,7 @@
             <img :src="user.avatar" alt="avatar" class="avatar" />
             <label class="avatar-edit-btn" title="Thay ảnh">
               <input type="file" accept="image/*" hidden @change="handleAvatarChange" />
-              ✏️
+
             </label>
           </div>
           <h3>{{ user.fullName }}</h3>
@@ -41,7 +41,7 @@
           <div class="section-head">
             <h2>👤 Thông tin cá nhân</h2>
             <button class="btn-edit" @click="editing = !editing">
-              {{ editing ? '✕ Huỷ' : '✏️ Chỉnh sửa' }}
+              {{ editing ? 'Huỷ' : 'Chỉnh sửa' }}
             </button>
           </div>
 
@@ -76,7 +76,7 @@
               </div>
             </div>
             <div class="form-actions full" v-if="editing">
-              <button type="submit" class="btn-save">💾 Lưu thay đổi</button>
+              <button type="submit" class="btn-save">Lưu thay đổi</button>
             </div>
           </form>
         </section>
@@ -84,7 +84,7 @@
         <!-- Đổi mật khẩu -->
         <section v-if="activeTab === 'password'" class="section-card">
           <div class="section-head">
-            <h2>🔒 Đổi mật khẩu</h2>
+            <h2>Đổi mật khẩu</h2>
           </div>
           <form @submit.prevent="changePassword" class="form-grid">
             <div class="form-group full">
@@ -92,7 +92,7 @@
               <div class="input-pw-wrap">
                 <input v-model="pwForm.current" :type="showPw.current ? 'text' : 'password'" placeholder="••••••••" />
                 <button type="button" class="toggle-pw" @click="showPw.current = !showPw.current">
-                  {{ showPw.current ? '🙈' : '👁' }}
+                  {{ showPw.current ? 'ẩn' : 'hiện' }}
                 </button>
               </div>
             </div>
@@ -101,7 +101,7 @@
               <div class="input-pw-wrap">
                 <input v-model="pwForm.new" :type="showPw.new ? 'text' : 'password'" placeholder="Tối thiểu 8 ký tự" />
                 <button type="button" class="toggle-pw" @click="showPw.new = !showPw.new">
-                  {{ showPw.new ? '🙈' : '👁' }}
+                  {{ showPw.new ? 'ẩn' : 'hiện' }}
                 </button>
               </div>
               <div class="pw-strength" v-if="pwForm.new">
@@ -116,15 +116,15 @@
               <div class="input-pw-wrap">
                 <input v-model="pwForm.confirm" :type="showPw.confirm ? 'text' : 'password'" placeholder="Nhập lại mật khẩu mới" />
                 <button type="button" class="toggle-pw" @click="showPw.confirm = !showPw.confirm">
-                  {{ showPw.confirm ? '🙈' : '👁' }}
+                  {{ showPw.confirm ? 'ẩn' : 'hiện' }}
                 </button>
               </div>
               <p class="pw-mismatch" v-if="pwForm.confirm && pwForm.new !== pwForm.confirm">
-                ⚠️ Mật khẩu không khớp
+                Mật khẩu không khớp
               </p>
             </div>
             <div class="form-actions full">
-              <button type="submit" class="btn-save">🔐 Cập nhật mật khẩu</button>
+              <button type="submit" class="btn-save">Cập nhật mật khẩu</button>
             </div>
           </form>
         </section>
@@ -132,7 +132,7 @@
         <!-- Địa chỉ -->
         <section v-if="activeTab === 'address'" class="section-card">
           <div class="section-head">
-            <h2>📍 Địa chỉ giao hàng</h2>
+            <h2>Địa chỉ giao hàng</h2>
             <button class="btn-add" @click="showAddAddress = true">+ Thêm địa chỉ</button>
           </div>
 
@@ -160,7 +160,7 @@
         <!-- Đơn hàng của tôi -->
         <section v-if="activeTab === 'orders'" class="section-card">
           <div class="section-head">
-            <h2>📦 Đơn hàng của tôi</h2>
+            <h2>Đơn hàng của tôi</h2>
           </div>
           <div class="quick-order-stats">
             <div v-for="stat in orderStats" :key="stat.label" class="stat-card" @click="$router.push('/order-history')">
@@ -193,10 +193,10 @@ const user = ref({
 })
 
 const navItems = [
-  { key: 'info', icon: '👤', label: 'Thông tin cá nhân' },
-  { key: 'orders', icon: '📦', label: 'Đơn hàng của tôi' },
-  { key: 'address', icon: '📍', label: 'Địa chỉ giao hàng' },
-  { key: 'password', icon: '🔒', label: 'Đổi mật khẩu' },
+  { key: 'info', icon: '', label: 'Thông tin cá nhân' },
+  { key: 'orders', icon: '', label: 'Đơn hàng của tôi' },
+  { key: 'address', icon: '', label: 'Địa chỉ giao hàng' },
+  { key: 'password', icon: '', label: 'Đổi mật khẩu' },
 ]
 
 const genders = [
@@ -241,10 +241,10 @@ const addresses = ref([
 ])
 
 const orderStats = [
-  { icon: '⏳', count: 1, label: 'Chờ xác nhận' },
-  { icon: '🚚', count: 2, label: 'Đang giao' },
-  { icon: '✅', count: 12, label: 'Đã giao' },
-  { icon: '❌', count: 1, label: 'Đã huỷ' },
+  { icon: '', count: 1, label: 'Chờ xác nhận' },
+  { icon: '', count: 2, label: 'Đang giao' },
+  { icon: '', count: 12, label: 'Đã giao' },
+  { icon: '', count: 1, label: 'Đã huỷ' },
 ]
 
 const handleAvatarChange = (e: any) => {

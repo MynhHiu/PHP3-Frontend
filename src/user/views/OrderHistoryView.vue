@@ -8,7 +8,7 @@
       <span class="active">Lịch sử đơn hàng</span>
     </div>
 
-    <h1 class="page-title">📦 Lịch sử đơn hàng</h1>
+    <h1 class="page-title">Lịch sử đơn hàng</h1>
 
     <!-- Filter tabs -->
     <div class="filter-tabs">
@@ -26,14 +26,14 @@
     <!-- Search order -->
     <div class="search-row">
       <div class="search-input-wrap">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"></span>
         <input v-model="searchQuery" type="text" placeholder="Tìm kiếm theo mã đơn hàng, tên sản phẩm..." />
       </div>
     </div>
 
     <!-- Order list -->
     <div v-if="filteredOrders.length === 0" class="empty-state">
-      <div class="empty-icon">📋</div>
+      <div class="empty-icon"></div>
       <p>Không có đơn hàng nào</p>
     </div>
 
@@ -155,11 +155,11 @@ const orders = computed(() =>
 )
 
 const statusLabel = (s: string) => ({
-  pending:    '⏳ Chờ xác nhận',
-  processing: '🔧 Đang xử lý',
-  shipping:   '🚚 Đang giao',
-  delivered:  '✅ Đã giao',
-  cancelled:  '❌ Đã huỷ',
+  pending:    'Chờ xác nhận',
+  processing: 'Đang xử lý',
+  shipping:   'Đang giao',
+  delivered:  'Đã giao',
+  cancelled:  'Đã huỷ',
 }[s] || s)
 
 const countByStatus = (tab: string) => {

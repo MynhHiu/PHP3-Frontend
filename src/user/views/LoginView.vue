@@ -24,7 +24,7 @@
         <div class="form-group">
           <label>Email</label>
           <div class="input-wrap">
-            <span class="input-icon">✉</span>
+            <span class="input-icon"></span>
             <input v-model="loginForm.email" type="email" placeholder="example@email.com"
               required :disabled="loading" />
           </div>
@@ -32,11 +32,11 @@
         <div class="form-group">
           <label>Mật khẩu</label>
           <div class="input-wrap">
-            <span class="input-icon">🔒</span>
+            <span class="input-icon"></span>
             <input v-model="loginForm.password" :type="showPwd ? 'text' : 'password'"
               placeholder="Nhập mật khẩu" required :disabled="loading" />
             <button type="button" class="toggle-pwd" @click="showPwd = !showPwd">
-              {{ showPwd ? '🙈' : '👁' }}
+              {{ showPwd ? 'Ẩn' : 'hiện' }}
             </button>
           </div>
         </div>
@@ -74,7 +74,7 @@
           <div class="form-group">
             <label>Email</label>
             <div class="input-wrap">
-              <span class="input-icon">✉</span>
+              <span class="input-icon"></span>
               <input v-model="forgotEmail" type="email" placeholder="example@email.com"
                 required :disabled="loading" />
             </div>
@@ -105,7 +105,7 @@
             </template>
             <template v-else>
               <a href="#" @click.prevent="handleResendOtp" class="otp-resend-link">
-                {{ resendLoading ? 'Đang gửi...' : '🔄 Gửi lại mã OTP' }}
+                {{ resendLoading ? 'Đang gửi...' : 'Gửi lại mã OTP' }}
               </a>
             </template>
           </div>
@@ -121,18 +121,18 @@
           <div class="form-group">
             <label>Mật khẩu mới</label>
             <div class="input-wrap">
-              <span class="input-icon">🔒</span>
+              <span class="input-icon"></span>
               <input v-model="resetForm.password" :type="showPwd ? 'text' : 'password'"
                 placeholder="Tối thiểu 6 ký tự" required minlength="6" :disabled="loading" />
               <button type="button" class="toggle-pwd" @click="showPwd = !showPwd">
-                {{ showPwd ? '🙈' : '👁' }}
+                {{ showPwd ? 'x' : 'o' }}
               </button>
             </div>
           </div>
           <div class="form-group">
             <label>Xác nhận mật khẩu mới</label>
             <div class="input-wrap">
-              <span class="input-icon">🔒</span>
+              <span class="input-icon"></span>
               <input v-model="resetForm.confirmPassword" :type="showPwd ? 'text' : 'password'"
                 placeholder="Nhập lại mật khẩu mới" required :disabled="loading" />
             </div>
@@ -227,7 +227,7 @@ async function handleLogin() {
   loading.value = true; alertMsg.value = ''
   try {
     await authStore.login(loginForm.email, loginForm.password)
-    showAlert('✅ Đăng nhập thành công!', 'success')
+    showAlert('Đăng nhập thành công!', 'success')
     setTimeout(redirectAfterAuth, 800)
   } catch (err: any) {
     showAlert(err.userMessage || 'Email hoặc mật khẩu không đúng.')
@@ -238,7 +238,7 @@ async function handleSendOtp() {
   loading.value = true; alertMsg.value = ''
   try {
     await authApi.sendOtp(forgotEmail.value)
-    showAlert('📧 Mã OTP đã gửi! Kiểm tra email của bạn.', 'success')
+    showAlert('Mã OTP đã gửi! Kiểm tra email của bạn.', 'success')
     otpDigits.forEach((_, i) => { otpDigits[i] = '' })
     startCountdown(120)
     tab.value = 'otp'
@@ -251,7 +251,7 @@ async function handleResendOtp() {
   resendLoading.value = true; alertMsg.value = ''
   try {
     await authApi.sendOtp(forgotEmail.value)
-    showAlert('📧 Đã gửi lại mã OTP mới!', 'success')
+    showAlert('Đã gửi lại mã OTP mới!', 'success')
     otpDigits.forEach((_, i) => { otpDigits[i] = '' })
     startCountdown(120)
     otpRefs.value[0]?.focus()
@@ -265,7 +265,7 @@ async function handleVerifyOtp() {
   loading.value = true; alertMsg.value = ''
   try {
     await authApi.verifyOtp(forgotEmail.value, otpValue.value)
-    showAlert('✅ Xác minh thành công!', 'success')
+    showAlert('Xác minh thành công!', 'success')
     setTimeout(() => { tab.value = 'reset' }, 800)
   } catch (err: any) {
     showAlert(err.userMessage || 'Mã OTP không đúng hoặc đã hết hạn.')
@@ -277,7 +277,7 @@ async function handleResetPassword() {
   loading.value = true; alertMsg.value = ''
   try {
     await authApi.resetPassword(forgotEmail.value, otpValue.value, resetForm.password, resetForm.confirmPassword)
-    showAlert('🎉 Đặt lại mật khẩu thành công! Chuyển về đăng nhập...', 'success')
+    showAlert('Đặt lại mật khẩu thành công! Chuyển về đăng nhập...', 'success')
     setTimeout(() => { loginForm.email = forgotEmail.value; loginForm.password = ''; tab.value = 'login' }, 1500)
   } catch (err: any) {
     showAlert(err.userMessage || 'Đặt lại mật khẩu thất bại. Thử lại.')

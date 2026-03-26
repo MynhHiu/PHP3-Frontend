@@ -61,7 +61,7 @@
       <div class="u-flash-section">
         <!-- <div class="u-flash-header">
           <div class="u-flash-title">
-            <span class="u-flash-icon">⚡</span>
+            <span class="u-flash-icon"></span>
             <h2>FLASHSALE GIÁ SỐC</h2>
           </div>
           <div class="u-flash-countdown">
@@ -124,7 +124,7 @@ async function handleAddToCart(p: Prod) {
   // Dùng router.resolve để kiểm tra route 'login' có tồn tại không trước khi push
   // Tránh bị wildcard redirect sang /admin
   if (!authStore.token) {
-    showToast('⚠️ Vui lòng đăng nhập để thêm vào giỏ hàng!', 'warning')
+    showToast('Vui lòng đăng nhập để thêm vào giỏ hàng!', 'warning')
     setTimeout(() => {
       const loginRoute = router.resolve({ name: 'login' })
       if (loginRoute.name !== '/:pathMatch(.*)*') {
@@ -138,9 +138,9 @@ async function handleAddToCart(p: Prod) {
   try {
     // Dùng String(p.id) làm SKU tạm — thay bằng p.skuCode khi có API thật
     await cartStore.addToCart(String(p.id))
-    showToast(`✅ Đã thêm "${p.name}" vào giỏ hàng!`, 'success')
+    showToast(`Đã thêm "${p.name}" vào giỏ hàng!`, 'success')
   } catch {
-    showToast('❌ Không thể thêm vào giỏ hàng. Vui lòng thử lại.', 'error')
+    showToast('Không thể thêm vào giỏ hàng. Vui lòng thử lại.', 'error')
   }
 }
 

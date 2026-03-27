@@ -154,7 +154,8 @@ onMounted(() => {
 
 async function handleLogout() {
   await authStore.logout()
-  router.push('/login')
+  // Giữ nguyên trang hiện tại sau khi đăng xuất (không chuyển về /login)
+  // Nếu muốn đổi hướng, dùng router.push('/login') ở đây.
 }
 
 const IconLogout = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4' }), h('polyline', { points: '16 17 21 12 16 7' }), h('line', { x1: '21', y1: '12', x2: '9', y2: '12' })]) }

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/user/stores/authStore'
 
 const AdminLayout = () => import('@/admin/layouts/AdminLayout.vue')
 const DashboardView = () => import('@/admin/views/DashboardView.vue')
@@ -23,8 +24,9 @@ const OrderHistoryView = () => import('@/user/views/OrderHistoryView.vue')
 const OrderDetailView = () => import('@/user/views/OrderDetailView.vue')
 const LoginView = () => import('@/user/views/LoginView.vue')
 const RegisterView = () => import('@/user/views/RegisterView.vue')
+const GoogleCallback   = () => import('@/user/views/GoogleCallback.vue')
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   scrollBehavior() {
     return { top: 0 }
@@ -75,6 +77,7 @@ export default createRouter({
         token ? next('/') : next()
       },
     },
+    { path: '/auth/google/callback', name: 'google-callback', component: GoogleCallback },
 
     // ── USER / FRONTEND ───────────────────────────────────────
     {
@@ -94,3 +97,24 @@ export default createRouter({
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
+
+// ─── Navigation Guard ─────────────────────────────────────────────────────────
+router.beforeEach((to: any, _from: any, next: any) => {
+  const authStore = useAuthStore()
+ 
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+ 
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    return next({ name: 'home' })
+  }
+ 
+  if (to.meta.guestOnly && authStore.isLoggedIn) {
+    return next({ name: 'home' })
+  }
+ 
+  next()
+})
+ 
+export default router

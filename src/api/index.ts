@@ -12,9 +12,10 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  // Lấy cả 2 token: admin và user
-  const token = localStorage.getItem('admin_token') 
+  // Lấy token ưu tiên từ user/session mới nhất, sau đó admin (trang quản trị)
+  const token = localStorage.getItem('token')
              || localStorage.getItem('user_token')
+             || localStorage.getItem('admin_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })

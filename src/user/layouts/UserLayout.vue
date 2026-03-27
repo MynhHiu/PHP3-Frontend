@@ -10,9 +10,10 @@
           <router-link to="/" class="u-logo">
             <!-- Logo -->
             <div class="sidebar-logo">
-              <div class="logo-wrapper">
-                <img :src="logoImage" alt="My Logo" class="logo" />
-              </div>
+              <div>
+              <div style="font-size:18px;font-weight:900;color:#4ade80">Green Electric</div>
+              <div style="font-size:10px;color:#555;letter-spacing:3px;text-transform:uppercase">Điện gia dụng</div>
+            </div>
             </div>
           </router-link>
 

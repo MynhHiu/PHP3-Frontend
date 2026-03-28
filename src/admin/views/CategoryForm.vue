@@ -25,26 +25,26 @@
             </div> -->
           </div>
 
-          <div class="form-row-2">
-            <!-- <div class="field">
+          <!-- <div class="form-row-2"> -->
+            <div class="field">
               <label class="label">Danh mục cha</label>
               <select v-model="form.parent_id" class="input">
                 <option :value="null">— Không có (gốc) —</option>
                 <option v-for="c in parentOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
-            </div> -->
+            </div>
             <!-- <div class="field">
               <label class="label">Thứ tự hiển thị</label>
               <input v-model.number="form.sort_order" type="number" min="0" class="input" />
             </div> -->
-          </div>
+          <!-- </div> -->
 
           <div class="field">
             <label class="label">Mô tả</label>
             <textarea v-model="form.description" class="input" rows="3" placeholder="Mô tả ngắn về danh mục..."></textarea>
           </div>
 
-          <!-- <div class="toggle-row" @click="form.is_active = !form.is_active">
+          <div class="toggle-row" @click="form.is_active = !form.is_active">
             <div :class="['toggle-track', form.is_active && 'on']">
               <div class="toggle-thumb"></div>
             </div>
@@ -52,30 +52,30 @@
               <p class="toggle-label">Hiển thị danh mục</p>
               <p class="toggle-sub">Bật để hiện trên website</p>
             </div>
-          </div> -->
+          </div>
         </div>
       </div>
 
       <!-- Image -->
-      <div class="section-card">
-        <h3>Ảnh đại diện</h3>
-        <div class="upload-zone" @click="($refs.imgRef as HTMLInputElement).click()"
-          @dragover.prevent @drop.prevent="onDrop">
-          <template v-if="preview">
-            <img :src="preview" class="cat-img-preview" />
-            <p class="cat-img-change">Click để thay ảnh</p>
-          </template>
-          <template v-else>
-            <svg style="width:32px;height:32px;color:var(--gray-300);margin:0 auto 8px;display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
+        <!-- <div class="section-card">
+          <h3>Ảnh đại diện</h3>
+          <div class="upload-zone" @click="($refs.imgRef as HTMLInputElement).click()"
+            @dragover.prevent @drop.prevent="onDrop">
+            <template v-if="preview">
+              <img :src="preview" class="cat-img-preview" />
+              <p class="cat-img-change">Click để thay ảnh</p>
+            </template>
+            <template v-else>
+              <svg style="width:32px;height:32px;color:var(--gray-300);margin:0 auto 8px;display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
             </svg>
             <p style="font-size:13px;font-weight:500;color:var(--gray-600)">Kéo thả hoặc <span style="color:var(--brand);text-decoration:underline">chọn ảnh</span></p>
             <p style="font-size:11px;color:var(--gray-400);margin-top:4px">PNG, JPG tối đa 2MB</p>
           </template>
         </div>
         <input ref="imgRef" type="file" accept="image/*" class="hidden" @change="onFileChange" />
-      </div>
+      </div> -->
 
       <div class="form-footer">
         <router-link to="/admin/categories" class="btn btn-outline">← Quay lại</router-link>

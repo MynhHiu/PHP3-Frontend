@@ -606,8 +606,13 @@ textarea.input { resize: none; }
 .cat-img-change  { font-size: 11px; color: var(--brand); text-decoration: underline; margin-top: 8px; text-align: center; }
 
 .form-footer {
-  display: flex; justify-content: space-between; align-items: center;
-  padding-top: 8px; border-top: 1px solid var(--gray-100);
+  display: flex; 
+  /* justify-content: space-between;  */
+  align-items: center;
+  padding-top: 8px; 
+  padding-right: 8px; 
+  border-top: 1px solid var(--gray-100);
+  gap: 15px;
 }
 .form-footer-right { display: flex; gap: 12px; }
 

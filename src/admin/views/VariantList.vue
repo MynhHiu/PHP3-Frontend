@@ -93,7 +93,8 @@
                 <td>
                   <div class="option-chips">
                     <span v-for="opt in v.options" :key="opt.id" class="option-chip">
-                      <span class="chip-int">#{{ opt.option_values }}</span>
+                      <!-- ✅ Ưu tiên hiển thị option_label, fallback sang option_values -->
+                      {{ opt.option_label || opt.option_values }}
                     </span>
                     <span v-if="!v.options || v.options.length === 0" style="font-size:12px;color:var(--gray-400)">—</span>
                   </div>
@@ -249,8 +250,17 @@ onMounted(async () => {
 .group-actions { display: flex; gap: 8px; }
 
 .option-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.option-chip { display: flex; align-items: center; gap: 3px; }
-.chip-int { font-family: monospace; font-size: 11px; color: var(--brand); font-weight: 700; background: #edf3ff; border-radius: 4px; padding: 2px 6px; }
+.option-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--gray-700);
+  font-weight: 500;
+}
 
 .loading-state { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-500); }
 .empty-table { text-align: center; padding: 48px; color: var(--gray-500); font-size: 14px; }

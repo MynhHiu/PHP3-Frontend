@@ -218,6 +218,15 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- ✅ Toast (thêm mới) -->
+    <Teleport to="body">
+      <transition name="slide-up">
+        <div v-if="toast" :class="['toast', toast.type]">
+          {{ toast.type === 'success' ? '✓' : '✕' }} {{ toast.msg }}
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -237,6 +246,13 @@ const delTarget   = ref<User | null>(null)
 const deleting    = ref(false)
 const avatarPreview = ref<string | null>(null)
 const avatarFile    = ref<File | null>(null)
+
+// ✅ Toast (thêm mới)
+const toast = ref<{ msg: string; type: string } | null>(null)
+function showToast(msg: string, type: string) {
+  toast.value = { msg, type }
+  setTimeout(() => toast.value = null, 3000)
+}
 
 const form = ref({ fullname: '', email: '', phone: '', address: '', brithday: '', role: 0, status: 1, password: '' })
 
@@ -267,6 +283,7 @@ function onAvatarChange(e: Event) {
   if (f) { avatarFile.value = f; avatarPreview.value = URL.createObjectURL(f) }
 }
 
+// ✅ saveUser: thay alert bằng toast
 async function saveUser() {
   submitting.value = true
   try {
@@ -276,16 +293,24 @@ async function saveUser() {
     if (editUser.value) await store.update(editUser.value.id, fd)
     else await store.create(fd)
     showForm.value = false
-  } catch (e: any) { alert(e.userMessage || 'Lưu thất bại') }
-  finally { submitting.value = false }
+    showToast(editUser.value ? 'Cập nhật thành công!' : 'Tạo tài khoản thành công!', 'success')
+  } catch (e: any) {
+    showToast(e.userMessage || 'Lưu thất bại', 'error')
+  } finally { submitting.value = false }
 }
 
 function confirmDel(u: User) { delTarget.value = u }
+
+// ✅ doDel: thêm toast
 async function doDel() {
   if (!delTarget.value) return
   deleting.value = true
-  try { await store.remove(delTarget.value.id) }
-  finally { deleting.value = false; delTarget.value = null }
+  try {
+    await store.remove(delTarget.value.id)
+    showToast('Xóa người dùng thành công!', 'success')
+  } catch (e: any) {
+    showToast(e.userMessage || 'Xóa thất bại', 'error')
+  } finally { deleting.value = false; delTarget.value = null }
 }
 
 async function toggleStatus(u: User) { await store.toggleStatus(u.id) }

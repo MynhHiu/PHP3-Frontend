@@ -192,7 +192,7 @@
             <!-- Image -->
             <div class="pg-img-wrap">
               <img
-                :src="p.image_url || PLACEHOLDER"
+                :src="resolveProductImage(p.image_url)"
                 :alt="p.name"
                 class="pg-img"
                 @error="(e) => (e.target as HTMLImageElement).src = PLACEHOLDER"
@@ -269,6 +269,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveProductImage, PLACEHOLDER } from '@/utils/productImage'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/user/stores/cartStore'
@@ -280,7 +281,7 @@ const authStore   = useAuthStore()
 const router      = useRouter()
 const productStore = useProductUserStore()
 
-const PLACEHOLDER = 'https://via.placeholder.com/260x260/e8f5e9/2d8c4e?text=SP'
+
 
 /* ── Toast ──────────────────────────────────────────────────────── */
 const toast = ref({ show: false, message: '', type: 'success' })

@@ -22,6 +22,7 @@ const CheckoutView = () => import('@/user/views/CheckoutView.vue')
 const ProfileView = () => import('@/user/views/ProfileView.vue')
 const OrderHistoryView = () => import('@/user/views/OrderHistoryView.vue')
 const OrderDetailView = () => import('@/user/views/OrderDetailView.vue')
+const ProductDetailView = () => import('@/user/views/ProductDetailView.vue')
 const LoginView = () => import('@/user/views/LoginView.vue')
 const RegisterView = () => import('@/user/views/RegisterView.vue')
 const GoogleCallback   = () => import('@/user/views/GoogleCallback.vue')
@@ -85,6 +86,7 @@ const router = createRouter({
       component: UserLayout,
       children: [
         { path: '', component: HomeView, name: 'home' },
+        { path: 'products/:id', component: ProductDetailView, name: 'product-detail' },
         { path: 'cart', component: CartView, name: 'cart' },
         { path: 'checkout', component: CheckoutView, name: 'checkout' },
         { path: 'profile', component: ProfileView, name: 'profile' },

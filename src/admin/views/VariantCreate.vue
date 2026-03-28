@@ -14,85 +14,54 @@
     </div>
 
     <div class="variant-layout">
-      <!-- LEFT: Thông tin biến thể -->
+      <!-- LEFT -->
       <div class="form-col">
+
+        <!-- Tên biến thể -->
         <div class="section-card">
           <h3>Thông tin biến thể</h3>
           <div class="form-inner">
-            <!-- Tên biến thể — variant_name VARCHAR(255) -->
-            <!-- <div class="field">
-              <label class="label">
-                Tên biến thể <span class="req">*</span>
-                <span class="hint">— Bảng: product_variants.variant_name</span>
-              </label>
+            <div class="field">
+              <label class="label">Tên biến thể <span class="req">*</span></label>
               <input
                 v-model="form.variant_name"
                 class="input"
                 placeholder="VD: Màu sắc, Kích cỡ, Dung tích..."
                 required
+                autofocus
               />
-            </div> -->
-
-            <!-- Sản phẩm liên kết — product_id INT(11) -->
-            <div class="field">
-              <label class="label">
-                Sản phẩm <span class="req">*</span>
-                <!-- <span class="hint">— Bảng: product_variants.product_id</span> -->
-              </label>
-              <select v-model="form.product_id" class="input" required>
-                <option value="">-- Chọn sản phẩm --</option>
-                <option v-for="p in products" :key="p.id" :value="p.id">
-                  [{{ p.id }}] {{ p.name }}
-                </option>
-              </select>
-              <p class="field-note">Biến thể sẽ được gắn với sản phẩm này.</p>
+              <!-- <p class="field-note">Ví dụ: Màu sắc, Kích thước, Chất liệu...</p> -->
             </div>
           </div>
         </div>
 
-        <!-- Giá trị tùy chọn -->
+        Giá trị của biến thể
         <div class="section-card">
-          <!-- <h3>
-            Giá trị tùy chọn
-            <span class="sub">— Bảng: variant_options.option_values (INT)</span>
-          </h3> -->
+          <h3>
+            Giá trị của biến thể
+            <!-- <span class="option-count-badge">{{ validOptions.length }}</span> -->
+          </h3>
           <!-- <p class="section-desc">
-            Mỗi giá trị được lưu dưới dạng <strong>số nguyên</strong> trong cột
-            <code>option_values</code>. Bạn nhập số ID hoặc mã giá trị.
+            Nhập các giá trị cho
+            <strong>{{ form.variant_name || 'biến thể' }}</strong>.
+            Nhấn <kbd>Enter</kbd> để thêm nhanh.
           </p> -->
 
           <div class="options-list">
-            <div
-              v-for="(opt, i) in options"
-              :key="i"
-              class="option-row"
-            >
-              <!-- option_values INT(11) -->
-              <div class="field" style="flex:1">
-                <label class="label">Giá trị số</label>
-                <input
-                  v-model.number="opt.option_values"
-                  type="number"
-                  class="input font-mono"
-                  placeholder="1, 2, 3..."
-                  min="0"
-                />
-              </div>
-              <!-- Label hiển thị (frontend only, không lưu DB) -->
-              <div class="field" style="flex:2">
-                <label class="label">Tên hiển thị</label>
-                <input
-                  v-model="opt.option_label"
-                  class="input"
-                  placeholder="VD: Đỏ, Xanh, Size M..."
-                />
-              </div>
+            <div v-for="(opt, i) in options" :key="i" class="option-row">
+              <input
+                v-model="opt.option_label"
+                class="input"
+                :placeholder="placeholderFor(i)"
+                @keydown.enter.prevent="onEnterOption(i)"
+                :ref="el => { if (el) optionRefs[i] = el as HTMLInputElement }"
+              />
               <button
                 v-if="options.length > 1"
                 type="button"
                 @click="removeOption(i)"
                 class="btn-icon delete"
-                style="margin-top:22px"
+                title="Xóa"
               >
                 <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/>
@@ -102,67 +71,60 @@
             </div>
           </div>
 
-          <button type="button" @click="addOption" class="btn btn-outline btn-sm" style="margin-top:12px">
+          <button type="button" @click="addOption" class="btn btn-outline btn-sm" style="margin-top:10px">
             + Thêm giá trị
           </button>
         </div>
       </div>
 
-      <!-- RIGHT: Xem trước & hướng dẫn -->
-      <div class="form-col">
-        <div class="section-card">
-          <h3>Xem trước</h3>
+      <!-- RIGHT -->
+      <!-- <div class="form-col"> -->
+        <!-- <div class="section-card"> -->
+          <!-- <h3>Xem trước</h3>
           <div v-if="form.variant_name" class="preview-block">
-            <p class="preview-label">Tên biến thể:</p>
+            <p class="preview-label">Tên biến thể</p>
             <span class="badge badge-green">{{ form.variant_name }}</span>
 
-            <p class="preview-label" style="margin-top:12px">Giá trị:</p>
+            <p class="preview-label" style="margin-top:14px">Các giá trị</p>
             <div class="option-chips">
-              <span
-                v-for="(opt, i) in options.filter(o => o.option_values !== null)"
-                :key="i"
-                class="option-chip"
-              >
-                {{ opt.option_label || opt.option_values }}
-                <span class="chip-id">#{{ opt.option_values }}</span>
+              <span v-for="(opt, i) in validOptions" :key="i" class="option-chip">
+                {{ opt.option_label }}
               </span>
+              <span v-if="validOptions.length === 0" class="preview-empty">Chưa có giá trị</span>
             </div>
-          </div>
-          <div v-else class="empty-table" style="padding:24px">
-            <p style="font-size:13px;color:var(--gray-400)">Nhập tên biến thể để xem trước</p>
-          </div>
-        </div>
 
-        <!-- Hướng dẫn cột DB -->
-        <!-- <div class="section-card">
-          <h3>Cấu trúc database</h3>
-          <div class="db-table-info">
-            <p class="db-table-name">📋 product_variants</p>
-            <table class="db-cols-table">
-              <tr><td class="col-name">id</td><td class="col-type">INT AUTO_INCREMENT PK</td></tr>
-              <tr><td class="col-name">variant_name</td><td class="col-type">VARCHAR(255) NOT NULL</td></tr>
-              <tr><td class="col-name">product_id</td><td class="col-type">INT(11) FK → products.id</td></tr>
-              <tr><td class="col-name">created_at</td><td class="col-type">DATETIME</td></tr>
-            </table>
-            <p class="db-table-name" style="margin-top:12px">📋 variant_options</p>
-            <table class="db-cols-table">
-              <tr><td class="col-name">id</td><td class="col-type">INT AUTO_INCREMENT PK</td></tr>
-              <tr><td class="col-name">product_variant_id</td><td class="col-type">INT FK → product_variants.id</td></tr>
-              <tr class="col-highlight"><td class="col-name">option_values</td><td class="col-type">INT(11) NOT NULL ⚠️</td></tr>
-              <tr><td class="col-name">created_at</td><td class="col-type">DATETIME</td></tr>
-            </table>
-          </div>
+            <p class="preview-label" style="margin-top:14px">Tóm tắt</p>
+            <p class="preview-text">
+              Biến thể <strong>{{ form.variant_name }}</strong>
+              có <strong>{{ validOptions.length }}</strong> giá trị
+            </p>
+          </div> -->
+          <!-- <div v-else class="empty-preview">
+            <div style="font-size:28px;margin-bottom:8px">🏷️</div>
+            <p>Nhập tên biến thể để xem trước</p>
+          </div> -->
+        <!-- </div> -->
+
+        <!-- <div class="section-card tips-card">
+          <h3>💡 Gợi ý</h3>
+          <ul class="tips-list">
+            <li>Nhấn <kbd>Enter</kbd> ở ô giá trị để thêm dòng kế tiếp</li>
+            <li><em>Màu sắc</em> → Đỏ, Xanh, Trắng, Đen, Vàng</li>
+            <li><em>Kích cỡ</em> → S, M, L, XL, XXL</li>
+            <li><em>Dung tích</em> → 250ml, 500ml, 1L, 2L</li>
+            <li>Sau khi tạo, vào <strong>Gán biến thể</strong> để gắn vào sản phẩm</li>
+          </ul>
         </div> -->
-      </div>
+      <!-- </div> -->
     </div>
 
-    <!-- Footer actions -->
+    <!-- Footer -->
     <div class="form-footer" style="margin-top:16px">
       <router-link to="/admin/variants" class="btn btn-outline">← Quay lại</router-link>
       <button
         type="button"
         @click="submit"
-        :disabled="submitting || !form.variant_name || !form.product_id"
+        :disabled="submitting || !form.variant_name.trim()"
         class="btn btn-primary btn-min"
       >
         <svg v-if="submitting" class="animate-spin" style="width:16px;height:16px" viewBox="0 0 24 24"
@@ -185,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { variantApi, productApi } from '@/api'
 
@@ -193,52 +155,86 @@ const route      = useRoute()
 const router     = useRouter()
 const isEdit     = computed(() => !!route.params.id)
 const submitting = ref(false)
-const products   = ref<any[]>([])
 const toast      = ref<{ msg: string; type: string } | null>(null)
+const optionRefs = ref<HTMLInputElement[]>([])
 
-// Form khớp với bảng product_variants
-const form = reactive({
-  variant_name: '',   // VARCHAR(255)
-  product_id: '' as number | string,  // INT(11) FK → products.id
-})
+// Chỉ cần tên biến thể — không cần product_id
+const form = reactive({ variant_name: '' })
 
-// Danh sách giá trị tùy chọn (variant_options)
-const options = reactive<Array<{
-  option_values: number | null   // INT(11) — trường trong DB
-  option_label: string           // Frontend only
-}>>([{ option_values: null as any, option_label: '' }])
+// Giá trị: chỉ nhập text label
+const options = reactive<Array<{ id?: number; option_label: string }>>([
+  { option_label: '' }
+])
+
+const validOptions = computed(() => options.filter(o => o.option_label.trim()))
+
+// Placeholder thông minh theo tên biến thể
+const EXAMPLES: Record<string, string[]> = {
+  'màu':  ['Đỏ', 'Xanh lam', 'Trắng', 'Đen', 'Vàng', 'Hồng'],
+  'kích': ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+  'size': ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+  'dung': ['250ml', '500ml', '1L', '2L', '5L'],
+  'chất': ['Cotton', 'Polyester', 'Linen', 'Silk', 'Denim'],
+  'kiểu': ['Cổ tròn', 'Cổ V', 'Cổ polo', 'Không cổ'],
+}
+
+function placeholderFor(index: number): string {
+  const name = form.variant_name.toLowerCase()
+  for (const [key, vals] of Object.entries(EXAMPLES)) {
+    if (name.includes(key)) return `VD: ${vals[index % vals.length]}`
+  }
+  return `VD: Giá trị ${index + 1}`
+}
 
 function addOption() {
-  options.push({ option_values: null as any, option_label: '' })
+  options.push({ option_label: '' })
+  nextTick(() => optionRefs.value[options.length - 1]?.focus())
 }
+
 function removeOption(i: number) {
   options.splice(i, 1)
 }
 
+function onEnterOption(i: number) {
+  if (i === options.length - 1) {
+    addOption()
+  } else {
+    optionRefs.value[i + 1]?.focus()
+  }
+}
+
 async function submit() {
-  if (!form.variant_name || !form.product_id) return
+  if (!form.variant_name.trim()) return
   submitting.value = true
   try {
     if (isEdit.value) {
-      // Cập nhật variant_name
       await variantApi.updateVariant(Number(route.params.id), {
-        variant_name: form.variant_name,
+        variant_name: form.variant_name.trim(),
       })
+      // Thêm option mới (chưa có id trong DB)
+      const newOpts = options.filter(o => o.option_label.trim() && !o.id)
+      for (let i = 0; i < newOpts.length; i++) {
+        await variantApi.createOption(Number(route.params.id), {
+          product_variant_id: Number(route.params.id),
+          option_values: i + 1,
+        })
+      }
       showToast('Cập nhật biến thể thành công!', 'success')
     } else {
-      // Tạo biến thể mới
-      const res = await variantApi.createVariant(Number(form.product_id), {
-        variant_name: form.variant_name,
-        product_id: Number(form.product_id),
+      // Tạo biến thể không gắn sản phẩm (product_id = 0 hoặc null)
+      // Việc gán sản phẩm thực hiện ở trang Gán biến thể
+      const res = await variantApi.createVariant(0, {
+        variant_name: form.variant_name.trim(),
+        product_id: 0,
       })
       const newVariant = res.data.data ?? res.data
 
-      // Tạo các giá trị tùy chọn
-      const validOptions = options.filter(o => o.option_values !== null && !isNaN(o.option_values))
-      for (const opt of validOptions) {
+      // Tạo các giá trị (option_values = số thứ tự INT)
+      const toCreate = options.filter(o => o.option_label.trim())
+      for (let i = 0; i < toCreate.length; i++) {
         await variantApi.createOption(newVariant.id, {
           product_variant_id: newVariant.id,
-          option_values: Number(opt.option_values),  // INT(11)
+          option_values: i + 1,
         })
       }
       showToast('Tạo biến thể thành công!', 'success')
@@ -257,39 +253,65 @@ function showToast(msg: string, type: string) {
 }
 
 onMounted(async () => {
-  // Lấy danh sách sản phẩm
+  if (!isEdit.value) return
   try {
-    const res = await productApi.getAll()
-    products.value = res.data.data ?? res.data
+    const pRes = await productApi.getAll()
+    const allProducts = pRes.data.data ?? pRes.data
+    for (const p of allProducts) {
+      try {
+        const vRes = await variantApi.getVariants(p.id)
+        const variants = vRes.data.data ?? vRes.data
+        const found = variants.find((v: any) => v.id === Number(route.params.id))
+        if (found) {
+          form.variant_name = found.variant_name
+          if (found.options?.length) {
+            options.splice(0, options.length)
+            for (const opt of found.options) {
+              options.push({ id: opt.id, option_label: opt.option_label || String(opt.option_values) })
+            }
+          }
+          break
+        }
+      } catch {}
+    }
   } catch {}
-
-  // Nếu đang edit
-  if (isEdit.value) {
-    try {
-      // TODO: load variant by id nếu API có endpoint /admin/variants/:id
-    } catch {}
-  }
 })
 </script>
 
 <style scoped>
-.preview-label { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.preview-block { padding: 8px 0; }
-.option-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.option-chip { display: flex; align-items: center; gap: 4px; background: var(--gray-100); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
-.chip-id { font-size: 10px; color: var(--gray-400); font-family: monospace; }
-.db-table-info { font-size: 12px; }
-.db-table-name { font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
-.db-cols-table { width: 100%; border-collapse: collapse; }
-.db-cols-table tr td { padding: 4px 8px; border-bottom: 1px solid var(--gray-100); }
-.col-name { font-family: monospace; font-weight: 600; color: var(--brand); }
-.col-type { color: var(--gray-500); font-size: 11px; }
-.col-highlight td { background: #fef3cd; }
-.section-desc { font-size: 12px; color: var(--gray-500); margin-bottom: 12px; }
-.hint { font-size: 10px; font-weight: 400; color: var(--gray-400); font-family: monospace; }
-.field-note { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
-.option-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; }
-.options-list { display: flex; flex-direction: column; }
 .variant-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 768px) { .variant-layout { grid-template-columns: 1fr; } }
+
+.field-note { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+.section-desc { font-size: 13px; color: var(--gray-500); margin-bottom: 12px; line-height: 1.5; }
+.section-desc kbd, .tips-list kbd {
+  background: var(--gray-100); border: 1px solid var(--gray-300);
+  border-radius: 4px; padding: 1px 5px; font-size: 11px; font-family: monospace;
+}
+
+.option-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--brand); color: white; font-size: 11px; font-weight: 700;
+  border-radius: 10px; min-width: 20px; height: 20px; padding: 0 6px;
+  margin-left: 6px; vertical-align: middle;
+}
+
+.options-list { display: flex; flex-direction: column; gap: 8px; }
+.option-row   { display: flex; gap: 8px; align-items: center; }
+.option-row .input { flex: 1; }
+
+.preview-block  { padding: 4px 0; }
+.preview-label  { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 6px; }
+.preview-text   { font-size: 13px; color: var(--gray-600); margin: 0; }
+.preview-empty  { font-size: 12px; color: var(--gray-400); }
+.option-chips   { display: flex; flex-wrap: wrap; gap: 6px; }
+.option-chip    { display: inline-flex; align-items: center; background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 20px; padding: 4px 12px; font-size: 13px; color: var(--gray-700); }
+.empty-preview  { text-align: center; padding: 28px 16px; color: var(--gray-400); font-size: 13px; }
+
+.tips-card { margin-top: 0; }
+.tips-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.tips-list li { font-size: 13px; color: var(--gray-600); padding-left: 16px; position: relative; line-height: 1.5; }
+.tips-list li::before { content: '•'; position: absolute; left: 0; color: var(--brand); font-weight: 700; }
+.tips-list em     { color: var(--brand); font-style: normal; font-weight: 600; }
+.tips-list strong { color: var(--gray-700); }
 </style>

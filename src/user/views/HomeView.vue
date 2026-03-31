@@ -120,18 +120,51 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             Tất cả danh mục
           </div>
-          <ul class="ls-cat-list">
-            <li v-for="cat in sidebarCats" :key="cat.slug">
-              <router-link
-                :to="`/products?category=${cat.slug}`"
+          <!-- Skeleton khi đang tải danh mục -->
+          <ul v-if="catsLoading" class="ls-cat-list">
+            <li v-for="n in 7" :key="n" class="ls-cat-skeleton"></li>
+          </ul>
+
+          <ul v-else class="ls-cat-list">
+            <!-- Mục "Tất cả" -->
+            <li class="ls-cat-item">
+              <a
+                href="javascript:void(0)"
                 class="ls-cat-link"
-                :class="{ active: activeCat === cat.slug }"
-                @click="activeCat = cat.slug"
+                :class="{ active: activeCatId === null }"
+                @click="selectCategory(null)"
               >
-                <span class="ls-cat-ico">{{ cat.icon }}</span>
+                
+                <span class="ls-cat-name">Tất cả sản phẩm</span>
+              </a>
+            </li>
+            <!-- Danh mục cha + dropdown con -->
+            <li v-for="cat in sidebarCats" :key="cat.id" class="ls-cat-item">
+              <a
+                href="javascript:void(0)"
+                class="ls-cat-link"
+                :class="{ active: activeCatId === cat.id }"
+                @click="selectCategory(cat.id)"
+              >
+                <span class="ls-cat-ico">📂</span>
                 <span class="ls-cat-name">{{ cat.name }}</span>
-                <span class="ls-cat-arrow">›</span>
-              </router-link>
+                <span v-if="cat.children && cat.children.length" class="ls-cat-arrow">›</span>
+              </a>
+              <!-- Dropdown danh mục con -->
+              <div v-if="cat.children && cat.children.length" class="ls-sub-dropdown">
+                <div class="ls-sub-header">{{ cat.name }}</div>
+                <a
+                  v-for="sub in cat.children"
+                  :key="sub.id"
+                  href="javascript:void(0)"
+                  class="ls-sub-link"
+                  :class="{ active: activeCatId === sub.id }"
+                  @click="selectCategory(sub.id)"
+                >
+                  <span class="ls-sub-dot">•</span>
+                  {{ sub.name }}
+                </a>
+              </div>
             </li>
           </ul>
         </div>
@@ -206,9 +239,9 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   Thêm giỏ hàng
                 </button>
-                <button class="pg-quick-view" @click.stop title="Xem nhanh">
+                <!-- <button class="pg-quick-view" @click.stop title="Xem nhanh">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
+                </button> -->
               </div>
             </div>
 
@@ -270,7 +303,7 @@
 
 <script setup lang="ts">
 import { resolveProductImage, PLACEHOLDER } from '@/utils/productImage'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/user/stores/cartStore'
 import { useAuthStore } from '@/user/stores/authStore'
@@ -331,18 +364,6 @@ const trustItems = [
   { ico: '💳︎', title: 'Thanh toán linh hoạt', sub: 'ATM · Momo · COD' },
 ]
 
-const sidebarCats = [
-  { icon: '', name: 'Điều hòa, làm lạnh',   slug: 'dieu-hoa' },
-  { icon: '', name: 'Tủ lạnh, điện lạnh',   slug: 'tu-lanh' },
-  { icon: '', name: 'Đồ dùng nhà bếp',      slug: 'nha-bep' },
-  { icon: '', name: 'Quạt điện, quạt trần', slug: 'quat-dien' },
-  { icon: '', name: 'Thiết bị điện',         slug: 'thiet-bi-dien' },
-  { icon: '', name: 'Thiết bị chiếu sáng',  slug: 'chieu-sang' },
-  { icon: '', name: 'Nhà thông minh',        slug: 'nha-thong-minh' },
-  { icon: '', name: 'Dây cáp điện',          slug: 'day-cap' },
-  { icon: '', name: 'Sản phẩm khác',         slug: 'khac' },
-]
-
 const priceRanges = [
   { label: 'Dưới 500K', min: 0, max: 500000 },
   { label: '500K–2 triệu', min: 500000, max: 2000000 },
@@ -361,52 +382,49 @@ const sortOptions = [
   { key: 'popular', label: 'Phổ biến' },
 ]
 
+/* ── Categories from API ────────────────────────────────────────── */
+interface SubCategory { id: number; name: string; parent_id: number }
+interface ParentCategory { id: number; name: string; parent_id: null; children: SubCategory[] }
+
+const sidebarCats  = ref<ParentCategory[]>([])
+const catsLoading  = ref(true)
+
+async function fetchCategories() {
+  try {
+    const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+    const res  = await fetch(`${BASE}/categories`)
+    if (!res.ok) throw new Error('fetch failed')
+    sidebarCats.value = await res.json()
+  } catch (e) {
+    console.error('Không tải được danh mục:', e)
+  } finally {
+    catsLoading.value = false
+  }
+}
+
 /* ── State ─────────────────────────────────────────────────────── */
-const activeCat        = ref('')
+const activeCatId      = ref<number | null>(null)   // null = tất cả
 const activePriceRange = ref('')
 const activeSort       = ref('default')
 const currentPage      = ref(1)
 const PAGE_SIZE        = 12
 
-/* ── Mock products fallback ─────────────────────────────────────── */
-const fmt = (n: number) => n.toLocaleString('vi-VN')
+/** Chọn danh mục cha hoặc con → gọi API lọc ngay */
+function selectCategory(id: number | null) {
+  activeCatId.value  = id
+  currentPage.value  = 1
+  const params: Record<string, any> = { per_page: 48 }
+  if (id !== null) params.category_id = id
+  productStore.fetchProducts(params).catch(() => {})
+}
 
-const mockProducts = Array.from({ length: 36 }, (_, i) => ({
-  id: i + 1,
-  name: [
-    'Máy lạnh Inverter tiết kiệm điện 1.5HP',
-    'Quạt điều hòa không khí 3 tốc độ',
-    'Ấm điện siêu tốc 1.8L công nghệ mới',
-    'Tủ lạnh 2 cánh inverter 350L',
-    'Máy xay sinh tố đa năng 1000W',
-    'Đèn LED âm trần 12W tiết kiệm điện',
-    'Bộ cảm biến nhà thông minh WiFi',
-    'Dây cáp điện chịu nhiệt cao cấp',
-    'Quạt đứng 5 cánh 40cm im lặng',
-    'Nồi cơm điện cao tần 1.8L',
-    'Máy lọc không khí HEPA 3 lớp',
-    'Công tắc thông minh điều khiển voice',
-  ][i % 12],
-  image_url: `https://via.placeholder.com/260x260/f0faf4/2d8c4e?text=SP${i + 1}`,
-  price: [299000, 890000, 1290000, 3500000, 7900000, 12500000][i % 6],
-  old_price: i % 3 === 0 ? [399000, 1190000, 1690000, 4800000, 9900000, 15000000][i % 6] : undefined,
-  discount: i % 3 === 0 ? [25, 20, 30, 15, 18, 22][i % 6] : undefined,
-  isNew: i % 7 === 0,
-  isHot: i % 5 === 0,
-  rating: 4 + (i % 2 === 0 ? 1 : 0),
-  reviewCount: 10 + (i * 7) % 80,
-  brand: { id: 1, name: ['Samsung', 'LG', 'Panasonic', 'Daikin'][i % 4] },
-  categories_id: (i % 9) + 1,
-  brand_id: (i % 4) + 1,
-}))
+/* ── Helpers ────────────────────────────────────────────────────── */
+const fmt = (n: number) => n.toLocaleString('vi-VN')
 
 /* ── Products display logic ─────────────────────────────────────── */
 const loading = computed(() => productStore.loading)
 
-const allProducts = computed<any[]>(() => {
-  const storeProds = productStore.products
-  return storeProds.length > 0 ? storeProds : mockProducts
-})
+const allProducts = computed<any[]>(() => productStore.products)
 
 const filteredProducts = computed(() => {
   let list = [...allProducts.value]
@@ -429,8 +447,9 @@ const displayedProducts = computed(() => {
 })
 
 /* ── Lifecycle ──────────────────────────────────────────────────── */
-onMounted(() => {
+onMounted(async () => {
   bannerTimer = setInterval(nextBanner, 4500)
+  await fetchCategories()
   productStore.fetchProducts({ per_page: 48 }).catch(() => {})
 })
 onUnmounted(() => {
@@ -683,7 +702,7 @@ onUnmounted(() => {
 .ls-block {
   background: #fff;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 8px rgba(0,0,0,.06);
   border: 1px solid #edf4f0;
 }
@@ -719,6 +738,86 @@ onUnmounted(() => {
 .ls-cat-name { flex: 1; }
 .ls-cat-arrow { opacity: 0; color: #2d8c4e; font-size: 15px; transition: opacity .15s; }
 .ls-cat-link:hover .ls-cat-arrow { opacity: 1; }
+/* ── Skeleton loading ── */
+.ls-cat-skeleton {
+  height: 36px;
+  margin: 3px 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8f5ec 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Dropdown danh mục con ── */
+.ls-cat-item {
+  position: relative;
+}
+.ls-sub-dropdown {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 220px;
+  background: #fff;
+  border: 1px solid #c8e6d0;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(45,140,78,.18);
+  z-index: 999;
+  padding: 8px 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(8px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.ls-cat-item:hover .ls-sub-dropdown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+/* Cầu nối để chuột di sang dropdown không bị mất hover */
+.ls-sub-dropdown::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 0;
+  width: 10px;
+  height: 100%;
+}
+.ls-sub-header {
+  font-size: 11px;
+  font-weight: 800;
+  color: #1a5c2e;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid #edf4f0;
+  margin-bottom: 4px;
+}
+.ls-sub-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #444;
+  text-decoration: none;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ls-sub-link:hover,
+.ls-sub-link.active {
+  background: #f0faf4;
+  color: #1a6e35;
+}
+.ls-sub-dot {
+  color: #2d8c4e;
+  font-size: 10px;
+  flex-shrink: 0;
+}
 
 /* Price filter */
 .ls-filter .price-filter-btns {

@@ -1,4 +1,3 @@
-
 <template>
   <div class="admin-shell">
 
@@ -121,6 +120,15 @@
           </div>
         </router-link>
 
+        
+
+        <router-link to="/admin/coupons" custom v-slot="{ isActive, navigate }">
+          <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']" :title="!open ? 'Mã giảm giá' : ''">
+            <IconTag class="nav-icon" />
+            <span v-if="open">Mã giảm giá</span>
+          </div>
+        </router-link>
+
         <template v-if="open"><p class="nav-section" style="margin-top:8px">Hệ thống</p></template>
         <div v-else class="nav-divider"></div>
 
@@ -193,6 +201,9 @@ const titles: Record<string, string> = {
   'brand-edit':       'Sửa thương hiệu',
   'orders':           'Lịch sử đơn hàng',
   'users':            'Quản lý người dùng',
+  'coupons':          'Mã giảm giá',
+  'coupon-create':    'Thêm mã giảm giá',
+  'coupon-edit':      'Sửa mã giảm giá',
 
   'variants':         'Danh sách biến thể',
   'variant-create':   'Tạo biến thể',    

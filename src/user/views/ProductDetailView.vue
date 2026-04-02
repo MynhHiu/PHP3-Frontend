@@ -43,7 +43,6 @@
             class="pd-main-img"
             @error="(e) => ((e.target as HTMLImageElement).src = PLACEHOLDER)"
           />
-          <!-- Zoom hint -->
           <div class="pd-zoom-hint">🔍 Hover để xem</div>
         </div>
 
@@ -105,11 +104,11 @@
         <!-- Price -->
         <div class="pd-price-box">
           <div class="pd-price-main">
-            {{ fmt(selectedSku?.price ?? mockPrice) }}<span class="pd-currency">đ</span>
+            {{ fmt(selectedSku?.price ?? product.price ?? 0) }}<span class="pd-currency">đ</span>
           </div>
-          <div v-if="originalPrice > (selectedSku?.price ?? mockPrice)" class="pd-price-old-row">
+          <div v-if="originalPrice > (selectedSku?.price ?? product.price ?? 0)" class="pd-price-old-row">
             <span class="pd-price-old">{{ fmt(originalPrice) }}đ</span>
-            <span class="pd-discount-badge">Tiết kiệm {{ fmt(originalPrice - (selectedSku?.price ?? mockPrice)) }}đ</span>
+            <span class="pd-discount-badge">Tiết kiệm {{ fmt(originalPrice - (selectedSku?.price ?? product.price ?? 0)) }}đ</span>
           </div>
         </div>
 
@@ -154,18 +153,18 @@
           <button
             class="pd-btn-cart"
             @click="handleAddToCart"
-            :disabled="maxQty === 0"
+            :disabled="maxQty === 0 || addingToCart"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
               <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
             </svg>
-            Thêm vào giỏ hàng
+            {{ addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ hàng' }}
           </button>
           <button
             class="pd-btn-buy"
             @click="handleBuyNow"
-            :disabled="maxQty === 0"
+            :disabled="maxQty === 0 || addingToCart"
           >
             Mua ngay
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -198,27 +197,26 @@
             </svg>
             <div>
               <strong>Chính hãng 100%</strong>
-              <span>Cam kết hàng chính hãng</span>
+              <span>Sản phẩm chính hãng có tem niêm phong</span>
             </div>
           </div>
           <div class="pd-policy-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="3" width="15" height="13" rx="2"/>
-              <path d="M16 8h4l3 4v4h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm13 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+              <rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 5v3h-7V8z"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
             </svg>
             <div>
               <strong>Giao hàng toàn quốc</strong>
-              <span>Nhanh chóng, an toàn</span>
+              <span>Miễn phí vận chuyển đơn hàng từ 5 triệu</span>
             </div>
           </div>
           <div class="pd-policy-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
             <div>
-              <strong>Hỗ trợ lắp đặt</strong>
-              <span>Tại nhà miễn phí</span>
+              <strong>Đổi trả dễ dàng</strong>
+              <span>Hoàn tiền 100% nếu hàng lỗi trong 30 ngày</span>
             </div>
           </div>
         </div>
@@ -238,81 +236,67 @@
         </button>
       </div>
 
-      <div class="pd-tab-content">
-        <!-- Mô tả -->
-        <div v-if="activeTab === 'desc'" class="pd-tab-desc">
-          <div v-if="product.description" class="pd-desc-text" v-html="formattedDesc"></div>
-          <div v-else class="pd-desc-placeholder">
-            <div class="pd-desc-icon">📋</div>
-            <p>Sản phẩm <strong>{{ product.name }}</strong> từ thương hiệu <strong>{{ product.brand?.name || 'Green Electric' }}</strong>.</p>
-            <p>Sản phẩm chất lượng cao, thiết kế hiện đại, tiết kiệm năng lượng. Phù hợp cho mọi gia đình và văn phòng.</p>
-            <ul class="pd-feat-list">
-              <li>✓ Công nghệ tiên tiến, tiết kiệm điện</li>
-              <li>✓ Thiết kế sang trọng, hiện đại</li>
-              <li>✓ Dễ sử dụng và bảo trì</li>
-              <li>✓ Bảo hành chính hãng 24 tháng</li>
-              <li>✓ Hỗ trợ kỹ thuật tận nhà</li>
-            </ul>
+      <!-- Description -->
+      <div v-if="activeTab === 'desc'" class="pd-tab-desc">
+        <div v-if="product.description" class="pd-desc-text" v-html="formattedDesc"></div>
+        <div v-else class="pd-desc-placeholder">
+          <p>Sản phẩm <strong>{{ product.name }}</strong> từ thương hiệu <strong>{{ product.brand?.name || 'Green Electric' }}</strong>.</p>
+          <p>Sản phẩm chất lượng cao, được kiểm định nghiêm ngặt trước khi đến tay người dùng. Thiết kế hiện đại, tiết kiệm năng lượng, bảo hành chính hãng 24 tháng.</p>
+        </div>
+      </div>
+
+      <!-- Specs -->
+      <div v-if="activeTab === 'specs'" class="pd-tab-specs">
+        <table class="spec-table">
+          <tbody>
+            <tr v-if="product.brand">
+              <td class="spec-key">Thương hiệu</td>
+              <td class="spec-val">{{ product.brand.name }}</td>
+            </tr>
+            <tr v-if="product.category">
+              <td class="spec-key">Danh mục</td>
+              <td class="spec-val">{{ product.category.name }}</td>
+            </tr>
+            <tr v-for="spec in mockSpecs" :key="spec.key">
+              <td class="spec-key">{{ spec.key }}</td>
+              <td class="spec-val">{{ spec.value }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Reviews -->
+      <div v-if="activeTab === 'reviews'" class="pd-tab-reviews">
+        <div class="pd-rating-summary">
+          <div class="pd-rating-big">
+            <div class="pd-rating-number">{{ rating }}</div>
+            <div class="pd-rating-stars-big">
+              <span v-for="s in 5" :key="s" :class="['pd-rv-star-lg', s <= rating ? 'filled' : '']">★</span>
+            </div>
+            <div class="pd-rating-label">{{ reviewCount }} đánh giá</div>
+          </div>
+          <div class="pd-rating-bars">
+            <div v-for="bar in ratingBars" :key="bar.star" class="pd-rating-bar-row">
+              <span class="pd-bar-star">{{ bar.star }}★</span>
+              <div class="pd-bar-track"><div class="pd-bar-fill" :style="{ width: bar.percent + '%' }"></div></div>
+              <span class="pd-bar-count">{{ bar.count }}</span>
+            </div>
           </div>
         </div>
-
-        <!-- Thông số -->
-        <div v-if="activeTab === 'specs'" class="pd-tab-specs">
-          <table class="pd-specs-table">
-            <tbody>
-              <tr v-for="spec in mockSpecs" :key="spec.key">
-                <td class="spec-key">{{ spec.key }}</td>
-                <td class="spec-val">{{ spec.value }}</td>
-              </tr>
-              <tr v-if="product.brand">
-                <td class="spec-key">Thương hiệu</td>
-                <td class="spec-val">{{ product.brand.name }}</td>
-              </tr>
-              <tr v-if="product.category">
-                <td class="spec-key">Danh mục</td>
-                <td class="spec-val">{{ product.category.name }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Đánh giá -->
-        <div v-if="activeTab === 'reviews'" class="pd-tab-reviews">
-          <div class="pd-reviews-summary">
-            <div class="pd-reviews-score">
-              <div class="pd-big-score">{{ rating }}</div>
-              <div class="pd-stars-big">
-                <span v-for="s in 5" :key="s" :class="['pd-star-big', s <= rating ? 'filled' : '']">★</span>
-              </div>
-              <div class="pd-reviews-total">{{ reviewCount }} đánh giá</div>
-            </div>
-            <div class="pd-rating-bars">
-              <div v-for="bar in ratingBars" :key="bar.star" class="pd-rating-bar-row">
-                <span class="pd-bar-label">{{ bar.star }}★</span>
-                <div class="pd-bar-track">
-                  <div class="pd-bar-fill" :style="{ width: bar.percent + '%' }"></div>
+        <div class="pd-review-list">
+          <div v-for="(rv, i) in mockReviews" :key="i" class="pd-review-item">
+            <div class="pd-rv-header">
+              <div class="pd-rv-avatar">{{ rv.name[0] }}</div>
+              <div class="pd-rv-meta">
+                <strong class="pd-rv-name">{{ rv.name }}</strong>
+                <div class="pd-rv-stars">
+                  <span v-for="s in 5" :key="s" :class="['pd-rv-star', s <= rv.rating ? 'filled' : '']">★</span>
                 </div>
-                <span class="pd-bar-count">{{ bar.count }}</span>
               </div>
+              <span class="pd-rv-date">{{ rv.date }}</span>
             </div>
-          </div>
-
-          <!-- Review list -->
-          <div class="pd-review-list">
-            <div v-for="(rv, i) in mockReviews" :key="i" class="pd-review-item">
-              <div class="pd-rv-header">
-                <div class="pd-rv-avatar">{{ rv.name[0] }}</div>
-                <div class="pd-rv-meta">
-                  <strong class="pd-rv-name">{{ rv.name }}</strong>
-                  <div class="pd-rv-stars">
-                    <span v-for="s in 5" :key="s" :class="['pd-rv-star', s <= rv.rating ? 'filled' : '']">★</span>
-                  </div>
-                </div>
-                <span class="pd-rv-date">{{ rv.date }}</span>
-              </div>
-              <p class="pd-rv-text">{{ rv.text }}</p>
-              <div v-if="rv.verified" class="pd-rv-verified">✓ Đã mua sản phẩm</div>
-            </div>
+            <p class="pd-rv-text">{{ rv.text }}</p>
+            <div v-if="rv.verified" class="pd-rv-verified">✓ Đã mua sản phẩm</div>
           </div>
         </div>
       </div>
@@ -369,7 +353,7 @@ const productStore = useProductUserStore()
 const cartStore    = useCartStore()
 const authStore    = useAuthStore()
 
-const PLACEHOLDER  = 'https://via.placeholder.com/500x500/e8f5e9/2d8c4e?text=SP'
+const PLACEHOLDER  = 'https://placehold.co/500x500/e8f5e9/2d8c4e?text=SP'
 
 /* ── Toast ─────────────────────────────────────────────────── */
 const toast = ref({ show: false, message: '', type: 'success' })
@@ -380,111 +364,12 @@ function showToast(msg: string, type: 'success' | 'error' | 'warning' = 'success
   toastTimer  = setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-/* ── Mock product detail data ───────────────────────────────── */
-const mockProductDetails: Record<number, any> = {
-  1: {
-    id: 1,
-    name: 'Máy lạnh Inverter Daikin FTKB35XVMV 1.5HP',
-    description: 'Máy lạnh Daikin Inverter FTKB35XVMV công suất 1.5HP sử dụng công nghệ Inverter tiên tiến, giúp tiết kiệm điện năng lên đến 60% so với máy lạnh thông thường.\n\nMáy được trang bị bộ lọc không khí PM 2.5 cao cấp, loại bỏ bụi mịn và vi khuẩn, mang lại không khí trong lành cho gia đình bạn.\n\nChế độ làm lạnh nhanh Powerful Mode giúp hạ nhiệt độ phòng chỉ trong 15 phút.',
-    image_url: 'https://via.placeholder.com/500x500/e8f5e9/1a5c2e?text=Daikin+1.5HP',
-    categories_id: 1,
-    brand_id: 1,
-    brand: { id: 1, name: 'Daikin' },
-    category: { id: 1, name: 'Điều hòa, làm lạnh' },
-    skus: [
-      { sku_code: 'FTKB35-1P', price: 8990000, quantity: 15, status: 'active' },
-      { sku_code: 'FTKB35-3P', price: 9490000, quantity: 8,  status: 'active' },
-      { sku_code: 'FTKB50-1P', price: 11990000, quantity: 0, status: 'inactive' },
-    ],
-    images: [
-      { id: 1, url: 'https://via.placeholder.com/500x500/e8f5e9/1a5c2e?text=Daikin+1.5HP', mota: 'Ảnh chính' },
-      { id: 2, url: 'https://via.placeholder.com/500x500/dcfce7/166534?text=Goc+nhin+2',    mota: 'Góc nhìn 2' },
-      { id: 3, url: 'https://via.placeholder.com/500x500/f0fdf4/15803d?text=Chi+tiet',      mota: 'Chi tiết' },
-      { id: 4, url: 'https://via.placeholder.com/500x500/ecfdf5/065f46?text=Lap+dat',       mota: 'Lắp đặt' },
-    ],
-  },
-  2: {
-    id: 2,
-    name: 'Quạt điều hòa không khí Kangaroo KG50F21 3 tốc độ',
-    description: 'Quạt điều hòa Kangaroo KG50F21 với 3 chế độ gió mạnh–vừa–nhẹ, làm mát hiệu quả cho không gian đến 20m².\n\nThiết kế hiện đại, di chuyển dễ dàng với bánh xe. Bình chứa nước 5L, có thể thêm đá để tăng hiệu quả làm lạnh.',
-    image_url: 'https://via.placeholder.com/500x500/eff6ff/1e40af?text=Kangaroo+Fan',
-    categories_id: 4,
-    brand_id: 5,
-    brand: { id: 5, name: 'Kangaroo' },
-    category: { id: 4, name: 'Quạt điện, quạt trần' },
-    skus: [
-      { sku_code: 'KG50F21-WH', price: 890000,  quantity: 30, status: 'active' },
-      { sku_code: 'KG50F21-BL', price: 910000,  quantity: 12, status: 'active' },
-    ],
-    images: [
-      { id: 1, url: 'https://via.placeholder.com/500x500/eff6ff/1e40af?text=Kangaroo+Fan', mota: 'Ảnh chính' },
-      { id: 2, url: 'https://via.placeholder.com/500x500/dbeafe/1d4ed8?text=Chi+tiet',     mota: 'Chi tiết' },
-    ],
-  },
-  3: {
-    id: 3,
-    name: 'Ấm điện siêu tốc Philips HD9316 1.8L',
-    description: 'Ấm siêu tốc Philips HD9316 dung tích 1.8L, công suất 2200W đun sôi nhanh trong 3 phút.\n\nVỏ thép không gỉ bền đẹp, tự động ngắt điện khi nước sôi hoặc cạn. An toàn tuyệt đối cho gia đình.',
-    image_url: 'https://via.placeholder.com/500x500/fff7ed/9a3412?text=Philips+Kettle',
-    categories_id: 3,
-    brand_id: 6,
-    brand: { id: 6, name: 'Philips' },
-    category: { id: 3, name: 'Đồ dùng nhà bếp' },
-    skus: [
-      { sku_code: 'HD9316-BK', price: 299000, quantity: 50, status: 'active' },
-      { sku_code: 'HD9316-SS', price: 349000, quantity: 20, status: 'active' },
-    ],
-    images: [
-      { id: 1, url: 'https://via.placeholder.com/500x500/fff7ed/9a3412?text=Philips+Kettle', mota: 'Ảnh chính' },
-      { id: 2, url: 'https://via.placeholder.com/500x500/fef3c7/92400e?text=Chi+tiet',       mota: 'Chi tiết' },
-    ],
-  },
-}
-
-// Tạo mock mặc định cho các ID không có trong danh sách trên
-function createMockProduct(id: number): any {
-  const names   = ['Tủ lạnh 2 cánh Inverter Samsung 350L','Máy xay sinh tố LG 1000W','Đèn LED âm trần Panasonic 12W','Cảm biến nhà thông minh WiFi','Nồi cơm điện Sharp 1.8L','Máy lọc không khí HEPA','Quạt đứng im lặng Midea','Bàn là hơi nước Philips 2400W']
-  const brands  = ['Samsung','LG','Panasonic','Xiaomi','Sharp','Midea','Philips','Electrolux']
-  const cats    = ['Tủ lạnh','Nhà bếp','Chiếu sáng','Nhà thông minh']
-  const prices  = [299000, 890000, 1290000, 3500000, 7900000, 12500000, 2490000, 5990000]
-  const idx     = (id - 1) % names.length
-  return {
-    id,
-    name: names[idx],
-    description: `${names[idx]} – sản phẩm chất lượng cao từ thương hiệu ${brands[idx % brands.length]}.\n\nThiết kế hiện đại, tiết kiệm năng lượng, bảo hành chính hãng 24 tháng.`,
-    image_url: `https://via.placeholder.com/500x500/f0faf4/1a5c2e?text=SP-${id}`,
-    categories_id: (idx % 4) + 1,
-    brand_id: (idx % 8) + 1,
-    brand:    { id: (idx % 8) + 1, name: brands[idx % brands.length] },
-    category: { id: (idx % 4) + 1, name: cats[idx % cats.length] },
-    skus: [
-      { sku_code: `SKU-${id}-A`, price: prices[idx % prices.length],       quantity: 20 + idx, status: 'active' },
-      { sku_code: `SKU-${id}-B`, price: Math.round(prices[idx % prices.length] * 1.12), quantity: 10 + idx, status: 'active' },
-    ],
-    images: [
-      { id: 1, url: `https://via.placeholder.com/500x500/f0faf4/1a5c2e?text=SP-${id}`,  mota: 'Ảnh chính' },
-      { id: 2, url: `https://via.placeholder.com/500x500/dcfce7/166534?text=Goc-2`,      mota: 'Góc nhìn 2' },
-      { id: 3, url: `https://via.placeholder.com/500x500/ecfdf5/065f46?text=Chi-tiet`,   mota: 'Chi tiết' },
-    ],
-  }
-}
-
-/* ── Store state ────────────────────────────────────────────── */
-const product = computed(() => {
-  // Ưu tiên data thật từ API
-  if (productStore.detail) return productStore.detail
-  // Fallback mock khi API lỗi (không hiển thị trang trắng)
-  if (!productStore.loading) {
-    const id = Number(route.params.id)
-    if (id) return mockProductDetails[id] ?? createMockProduct(id)
-  }
-  return null
-})
-const loading = computed(() => productStore.loading && !product.value)
+/* ── Store state (dữ liệu thật từ API) ─────────────────────── */
+const product = computed(() => productStore.detail)
+const loading = computed(() => productStore.loading)
 const error   = computed(() => {
-  // Ẩn lỗi nếu đã có mock fallback hiển thị
-  if (product.value) return null
-  return productStore.error
+  if (productStore.loading || productStore.detail) return null
+  return productStore.error ?? null
 })
 
 /* ── Gallery ────────────────────────────────────────────────── */
@@ -493,26 +378,28 @@ const allImages   = computed<string[]>(() => {
   const imgs: string[] = []
   if (product.value?.image_url) imgs.push(product.value.image_url)
   if (product.value?.images)
-    product.value.images.forEach(i => { if (!imgs.includes(i.url)) imgs.push(i.url) })
+    product.value.images.forEach((i: any) => { if (!imgs.includes(i.url)) imgs.push(i.url) })
   return imgs
 })
 
 /* ── SKU selection ──────────────────────────────────────────── */
 const selectedSku = ref<ProductSku | null>(null)
 const qty         = ref(1)
-const maxQty      = computed(() => selectedSku.value?.quantity ?? 99)
+const maxQty      = computed(() => selectedSku.value?.quantity ?? product.value?.quantity ?? 0)
+const addingToCart = ref(false)
 
-const mockPrice   = 2990000
-const originalPrice = computed(() =>
-  selectedSku.value ? selectedSku.value.price * 1.2 : mockPrice * 1.25
-)
+const originalPrice = computed(() => {
+  const cur = selectedSku.value?.price ?? product.value?.price ?? 0
+  return Math.round(cur * 1.2)
+})
 const discountPercent = computed(() => {
-  const cur = selectedSku.value?.price ?? mockPrice
+  const cur = selectedSku.value?.price ?? product.value?.price ?? 0
   const ori = originalPrice.value
+  if (!ori || !cur) return 0
   return Math.round(((ori - cur) / ori) * 100)
 })
 
-/* ── Rating / Review data (mock) ────────────────────────────── */
+/* ── Rating / Review data (static) ─────────────────────────── */
 const rating      = ref(4)
 const reviewCount = ref(128)
 const soldCount   = ref(342)
@@ -550,50 +437,57 @@ const formattedDesc = computed(() =>
 )
 
 const mockSpecs = computed(() => [
-  { key: 'Xuất xứ',        value: 'Chính hãng' },
-  { key: 'Bảo hành',       value: '24 tháng' },
-  { key: 'Tình trạng',     value: 'Mới 100%' },
-  { key: 'Tiêu chuẩn',     value: 'CE, ISO 9001' },
-  { key: 'Màu sắc',        value: 'Trắng / Bạc' },
-  { key: 'Điện áp',        value: '220V – 50Hz' },
+  { key: 'Xuất xứ',    value: 'Chính hãng' },
+  { key: 'Bảo hành',   value: '24 tháng' },
+  { key: 'Tình trạng', value: 'Mới 100%' },
+  { key: 'Tiêu chuẩn', value: 'CE, ISO 9001' },
+  { key: 'Màu sắc',    value: 'Trắng / Bạc' },
+  { key: 'Điện áp',    value: '220V – 50Hz' },
 ])
 
-/* ── Related products (mock) ────────────────────────────────── */
+/* ── Related products (từ store) ────────────────────────────── */
 const relatedProducts = computed(() => {
-  const list = productStore.products.filter(p => p.id !== product.value?.id)
-  if (list.length > 0) return list.slice(0, 5)
-  return Array.from({ length: 5 }, (_, i) => ({
-    id: 100 + i,
-    name: ['Máy lạnh Inverter 1.5HP', 'Quạt điều hòa 3 tốc độ', 'Tủ lạnh 350L', 'Nồi cơm điện 1.8L', 'Đèn LED 12W'][i],
-    image_url: `https://via.placeholder.com/240x240/f0faf4/2d8c4e?text=SP${i + 1}`,
-    price: [8990000, 2490000, 12500000, 890000, 320000][i],
-    categories_id: 1,
-    brand_id: 1,
-  }))
+  return productStore.products
+    .filter((p: any) => p.id !== product.value?.id)
+    .slice(0, 5)
 })
 
-/* ── Actions ────────────────────────────────────────────────── */
+/* ── Helpers ────────────────────────────────────────────────── */
 function fmt(n: number) {
   return n.toLocaleString('vi-VN')
 }
 
+/* ── Actions ────────────────────────────────────────────────── */
 async function handleAddToCart() {
   if (!authStore.token) {
     showToast('Vui lòng đăng nhập để thêm vào giỏ hàng!', 'warning')
     setTimeout(() => router.push({ name: 'login' }), 1200)
     return
   }
+  if (!selectedSku.value && !(product.value?.skus?.length === 0)) {
+    // Nếu chưa chọn SKU mà có SKU thì nhắc chọn
+    if (product.value?.skus?.length > 0 && !selectedSku.value) {
+      showToast('Vui lòng chọn phiên bản sản phẩm!', 'warning')
+      return
+    }
+  }
+  addingToCart.value = true
   try {
-    const p   = product.value!
-    const sku = selectedSku.value?.sku_code ?? String(p.id)
-    await cartStore.addToCart(sku, qty.value, {
-      name:      p.name,
-      image_url: p.image_url,
-      price:     selectedSku.value?.price ?? mockPrice,
+    const skuCode = selectedSku.value?.sku_code
+    if (!skuCode) {
+      showToast('Vui lòng chọn phiên bản sản phẩm!', 'warning')
+      return
+    }
+    await cartStore.addToCart(skuCode, qty.value, {
+      name:      product.value!.name,
+      image_url: product.value!.image_url,
+      price:     selectedSku.value?.price ?? product.value?.price ?? 0,
     })
-    showToast(`Đã thêm "${p.name}" vào giỏ hàng!`, 'success')
+    showToast(`Đã thêm "${product.value!.name}" vào giỏ hàng!`, 'success')
   } catch {
     showToast('Không thể thêm vào giỏ hàng. Vui lòng thử lại.', 'error')
+  } finally {
+    addingToCart.value = false
   }
 }
 
@@ -620,28 +514,35 @@ function handleShare() {
   }
 }
 
-/* ── Lifecycle ──────────────────────────────────────────────── */
-onMounted(async () => {
-  const id = Number(route.params.id)
+/* ── Load product ───────────────────────────────────────────── */
+async function loadProduct(id: number) {
+  productStore.detail = null  // reset để hiện loading
   await productStore.fetchDetail(id)
   if (product.value) {
+    // Ảnh chính
     activeImage.value = product.value.image_url || ''
-    if (product.value.skus?.length) selectedSku.value = product.value.skus[0]
+    // Tự động chọn SKU đầu tiên còn hàng
+    const firstActiveSku = product.value.skus?.find((s: any) => s.status === 'active' && s.quantity > 0)
+      ?? product.value.skus?.[0]
+      ?? null
+    selectedSku.value = firstActiveSku
+    qty.value = 1
   }
+  // Tải sản phẩm liên quan nếu chưa có
   if (productStore.products.length === 0) {
     productStore.fetchProducts({ per_page: 20 }).catch(() => {})
   }
+}
+
+/* ── Lifecycle ──────────────────────────────────────────────── */
+onMounted(() => {
+  const id = Number(route.params.id)
+  if (id) loadProduct(id)
 })
 
-watch(() => route.params.id, async (newId) => {
+watch(() => route.params.id, (newId) => {
   const id = Number(newId)
-  if (id) {
-    await productStore.fetchDetail(id)
-    if (product.value) {
-      activeImage.value = product.value.image_url || ''
-      if (product.value.skus?.length) selectedSku.value = product.value.skus[0]
-    }
-  }
+  if (id) loadProduct(id)
 })
 
 watch(allImages, (imgs) => {
@@ -708,7 +609,7 @@ watch(allImages, (imgs) => {
 .pd-back-btn:hover { background: #1a5c2e; }
 
 /* ─────────────────────────────────────────
-   MAIN DETAIL LAYOUT
+   LAYOUT
 ───────────────────────────────────────── */
 .pd-main {
   display: grid;
@@ -729,7 +630,6 @@ watch(allImages, (imgs) => {
   flex-direction: column;
   gap: 12px;
 }
-
 .pd-main-img-wrap {
   position: relative;
   background: #fff;
@@ -749,7 +649,6 @@ watch(allImages, (imgs) => {
   transition: transform .4s ease;
 }
 .pd-main-img-wrap:hover .pd-main-img { transform: scale(1.06); }
-
 .pd-badges {
   position: absolute;
   top: 14px; left: 14px;
@@ -760,7 +659,6 @@ watch(allImages, (imgs) => {
   background: #e53e3e; color: #fff;
   font-size: 11px; font-weight: 800;
   padding: 4px 10px; border-radius: 20px;
-  letter-spacing: .3px;
 }
 .pd-badge-new {
   background: #2d8c4e; color: #fff;
@@ -775,8 +673,6 @@ watch(allImages, (imgs) => {
   padding: 4px 10px; border-radius: 12px;
   pointer-events: none;
 }
-
-/* Thumbnails */
 .pd-thumbs {
   display: flex;
   gap: 8px;
@@ -795,12 +691,7 @@ watch(allImages, (imgs) => {
 }
 .pd-thumb:hover { border-color: #2d8c4e; }
 .pd-thumb.active { border-color: #2d8c4e; box-shadow: 0 0 0 2px #dcfce7; }
-.pd-thumb img {
-  width: 100%; height: 100%;
-  object-fit: contain;
-}
-
-/* Trust row */
+.pd-thumb img { width: 100%; height: 100%; object-fit: contain; }
 .pd-trust-row {
   display: flex;
   gap: 6px;
@@ -817,7 +708,6 @@ watch(allImages, (imgs) => {
   font-size: 11.5px;
   color: #2a6a3e;
   font-weight: 600;
-  text-align: center;
   justify-content: center;
 }
 .pd-trust-ico { font-size: 16px; }
@@ -826,31 +716,24 @@ watch(allImages, (imgs) => {
    INFO PANEL
 ───────────────────────────────────────── */
 .pd-info { display: flex; flex-direction: column; gap: 18px; }
-
-/* Meta tags */
 .pd-meta-tags { display: flex; gap: 8px; flex-wrap: wrap; }
 .pd-brand-tag {
   background: #dcfce7; color: #166534;
   font-size: 11px; font-weight: 800;
   padding: 4px 12px; border-radius: 20px;
-  letter-spacing: .5px; text-transform: uppercase;
+  text-transform: uppercase;
 }
 .pd-cat-tag {
   background: #eff6ff; color: #1e40af;
   font-size: 11px; font-weight: 600;
   padding: 4px 12px; border-radius: 20px;
 }
-
-/* Title */
 .pd-title {
   font-size: 24px;
   font-weight: 900;
   color: #111;
   line-height: 1.35;
-  letter-spacing: -.3px;
 }
-
-/* Rating */
 .pd-rating-row {
   display: flex;
   align-items: center;
@@ -863,8 +746,6 @@ watch(allImages, (imgs) => {
 .pd-rating-val  { font-size: 13.5px; font-weight: 700; color: #333; }
 .pd-review-count, .pd-sold-count { font-size: 12.5px; color: #888; }
 .pd-divider { color: #ddd; }
-
-/* Price box */
 .pd-price-box {
   background: linear-gradient(135deg, #fff9f0, #fff);
   border: 2px solid #fde8c8;
@@ -895,12 +776,8 @@ watch(allImages, (imgs) => {
   padding: 3px 10px; border-radius: 20px;
   border: 1px solid #ffd699;
 }
-
-/* SKU section */
 .pd-sku-section { display: flex; flex-direction: column; gap: 10px; }
-.pd-section-label {
-  font-size: 13px; font-weight: 700; color: #555;
-}
+.pd-section-label { font-size: 13px; font-weight: 700; color: #555; }
 .pd-sku-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .pd-sku-btn {
   border: 2px solid #e0e8e3;
@@ -920,14 +797,9 @@ watch(allImages, (imgs) => {
 .pd-sku-btn:hover:not(:disabled) { border-color: #2d8c4e; background: #f0faf4; }
 .pd-sku-btn.active { border-color: #2d8c4e; background: #f0faf4; box-shadow: 0 0 0 3px #dcfce7; }
 .pd-sku-btn.out-of-stock { opacity: .5; cursor: not-allowed; }
-.pd-sku-code { font-size: 12px; font-weight: 700; color: #333; }
+.pd-sku-code  { font-size: 12px; font-weight: 700; color: #333; }
 .pd-sku-price { font-size: 13px; font-weight: 700; color: #e03131; }
-.pd-sku-oos {
-  position: absolute; top: 4px; right: 6px;
-  font-size: 9px; color: #e53e3e; font-weight: 700;
-}
-
-/* Quantity */
+.pd-sku-oos   { position: absolute; top: 4px; right: 6px; font-size: 9px; color: #e53e3e; font-weight: 700; }
 .pd-qty-section { display: flex; flex-direction: column; gap: 10px; }
 .pd-qty-row { display: flex; align-items: center; gap: 16px; }
 .pd-qty-ctrl { display: flex; align-items: center; }
@@ -936,8 +808,7 @@ watch(allImages, (imgs) => {
   border: 1.5px solid #d4e8da;
   background: #f8fdf9;
   color: #2d8c4e;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 18px; font-weight: 700;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all .15s;
@@ -953,16 +824,13 @@ watch(allImages, (imgs) => {
   border-left: none; border-right: none;
   text-align: center;
   font-size: 15px; font-weight: 700;
-  color: #222;
-  outline: none;
+  color: #222; outline: none;
   font-family: inherit;
 }
 .pd-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 .pd-stock-info { font-size: 13px; }
 .in-stock  { color: #16a34a; font-weight: 600; }
 .out-stock { color: #dc2626; font-weight: 600; }
-
-/* Action buttons */
 .pd-actions { display: flex; gap: 12px; }
 .pd-btn-cart {
   flex: 1;
@@ -971,21 +839,15 @@ watch(allImages, (imgs) => {
   border: 2.5px solid #2d8c4e;
   border-radius: 50px;
   padding: 14px 24px;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: 14.5px; font-weight: 800;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: all .2s;
   font-family: inherit;
-  letter-spacing: .2px;
 }
 .pd-btn-cart svg { width: 17px; height: 17px; flex-shrink: 0; }
 .pd-btn-cart:hover:not(:disabled) { background: #f0faf4; box-shadow: 0 4px 16px rgba(45,140,78,.2); }
 .pd-btn-cart:disabled { opacity: .45; cursor: not-allowed; }
-
 .pd-btn-buy {
   flex: 1;
   background: linear-gradient(135deg, #1a5c2e, #2d8c4e);
@@ -993,66 +855,46 @@ watch(allImages, (imgs) => {
   border: none;
   border-radius: 50px;
   padding: 14px 24px;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: 14.5px; font-weight: 800;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: all .2s;
   font-family: inherit;
-  letter-spacing: .2px;
   box-shadow: 0 4px 18px rgba(26,92,46,.3);
 }
 .pd-btn-buy svg { width: 15px; height: 15px; }
 .pd-btn-buy:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,92,46,.4); }
 .pd-btn-buy:disabled { opacity: .45; cursor: not-allowed; }
-
-/* Secondary actions */
 .pd-secondary-actions { display: flex; gap: 10px; }
 .pd-secondary-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: flex; align-items: center; gap: 6px;
   background: none;
   border: 1.5px solid #e0e8e3;
   border-radius: 50px;
   padding: 8px 18px;
-  font-size: 13px;
-  color: #666;
-  cursor: pointer;
-  font-family: inherit;
+  font-size: 13px; color: #666;
+  cursor: pointer; font-family: inherit;
   transition: all .2s;
 }
 .pd-secondary-btn:hover { border-color: #2d8c4e; color: #2d8c4e; background: #f0faf4; }
 .pd-heart { font-size: 15px; color: #ccc; transition: color .2s; }
 .pd-heart.active { color: #e53e3e; }
-
-/* Policy strip */
 .pd-policy-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: flex; flex-direction: column; gap: 0;
   background: #fff;
   border: 1.5px solid #e8ede9;
   border-radius: 14px;
   overflow: hidden;
 }
 .pd-policy-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  display: flex; align-items: center; gap: 14px;
   padding: 14px 18px;
   border-bottom: 1px solid #f0f5f1;
   transition: background .15s;
 }
 .pd-policy-item:last-child { border-bottom: none; }
 .pd-policy-item:hover { background: #f8fdf9; }
-.pd-policy-item svg {
-  width: 22px; height: 22px; flex-shrink: 0;
-  stroke: #2d8c4e;
-}
+.pd-policy-item svg { width: 22px; height: 22px; flex-shrink: 0; stroke: #2d8c4e; }
 .pd-policy-item div { display: flex; flex-direction: column; gap: 1px; }
 .pd-policy-item strong { font-size: 13px; color: #222; }
 .pd-policy-item span  { font-size: 12px; color: #888; }
@@ -1060,187 +902,81 @@ watch(allImages, (imgs) => {
 /* ─────────────────────────────────────────
    TABS
 ───────────────────────────────────────── */
-.pd-tabs-section {
-  padding-bottom: 48px;
-}
+.pd-tabs-section { padding-bottom: 48px; }
 .pd-tabs-header {
-  display: flex;
-  gap: 0;
+  display: flex; gap: 0;
   border-bottom: 2px solid #e8ede9;
   margin-bottom: 28px;
   overflow-x: auto;
 }
 .pd-tab {
   padding: 13px 28px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: #888;
-  cursor: pointer;
-  white-space: nowrap;
+  background: none; border: none;
+  font-size: 14px; font-weight: 600; color: #888;
+  cursor: pointer; white-space: nowrap;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
-  transition: all .2s;
-  font-family: inherit;
+  transition: all .2s; font-family: inherit;
 }
 .pd-tab:hover  { color: #2d8c4e; }
 .pd-tab.active { color: #2d8c4e; border-bottom-color: #2d8c4e; background: #f0faf4; border-radius: 8px 8px 0 0; }
-
-/* Description tab */
 .pd-tab-desc { max-width: 820px; }
-.pd-desc-text {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #333;
-}
-.pd-desc-placeholder {}
-.pd-desc-icon { font-size: 36px; margin-bottom: 12px; }
-.pd-desc-placeholder p {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #444;
-  margin-bottom: 10px;
-}
-.pd-feat-list {
-  list-style: none;
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pd-feat-list li {
-  font-size: 14.5px;
-  color: #333;
-  padding: 8px 14px;
-  background: #f0faf4;
-  border-radius: 8px;
-  border-left: 3px solid #2d8c4e;
-}
+.pd-desc-text { font-size: 15px; line-height: 1.8; color: #333; }
+.spec-table { width: 100%; border-collapse: collapse; max-width: 640px; }
+.spec-table tr:nth-child(odd) { background: #f8fdf9; }
+.spec-key { padding: 12px 16px; font-size: 14px; font-weight: 600; color: #555; width: 200px; }
+.spec-val { padding: 12px 16px; font-size: 14px; color: #222; }
 
-/* Specs tab */
-.pd-specs-table { width: 100%; border-collapse: collapse; }
-.pd-specs-table tr:nth-child(odd)  { background: #f8fdf9; }
-.pd-specs-table tr:nth-child(even) { background: #fff; }
-.pd-specs-table td {
-  padding: 12px 18px;
-  font-size: 14px;
-  border-bottom: 1px solid #eff4f1;
-}
-.spec-key {
-  width: 200px;
-  font-weight: 700;
-  color: #555;
-}
-.spec-val { color: #222; }
-
-/* Reviews tab */
-.pd-reviews-summary {
-  display: flex;
-  gap: 40px;
-  align-items: flex-start;
-  margin-bottom: 32px;
-  padding: 28px;
-  background: #f8fdf9;
-  border-radius: 16px;
-  border: 1.5px solid #e0eee4;
-}
-.pd-reviews-score {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 120px;
-}
-.pd-big-score {
-  font-size: 56px;
-  font-weight: 900;
-  color: #1a1a1a;
-  line-height: 1;
-}
-.pd-stars-big { display: flex; gap: 3px; }
-.pd-star-big { font-size: 20px; color: #ddd; }
-.pd-star-big.filled { color: #f5a623; }
-.pd-reviews-total { font-size: 13px; color: #888; }
-
+/* Reviews */
+.pd-rating-summary { display: flex; gap: 40px; margin-bottom: 32px; align-items: center; }
+.pd-rating-big { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pd-rating-number { font-size: 56px; font-weight: 900; color: #222; line-height: 1; }
+.pd-rating-stars-big { display: flex; gap: 3px; }
+.pd-rv-star-lg { font-size: 20px; color: #ddd; }
+.pd-rv-star-lg.filled { color: #f5a623; }
+.pd-rating-label { font-size: 13px; color: #888; }
 .pd-rating-bars { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.pd-rating-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.pd-bar-label { font-size: 13px; color: #555; width: 24px; text-align: right; font-weight: 600; }
-.pd-bar-track {
-  flex: 1;
-  height: 8px;
-  background: #e0e8e3;
-  border-radius: 4px;
-  overflow: hidden;
-}
-.pd-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #2d8c4e, #4ade80);
-  border-radius: 4px;
-  transition: width .6s ease;
-}
-.pd-bar-count { font-size: 12px; color: #888; width: 28px; }
-
-/* Review items */
+.pd-rating-bar-row { display: flex; align-items: center; gap: 10px; }
+.pd-bar-star { font-size: 12px; color: #888; width: 24px; text-align: right; }
+.pd-bar-track { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+.pd-bar-fill  { height: 100%; background: #f5a623; border-radius: 4px; }
+.pd-bar-count { font-size: 12px; color: #888; width: 24px; }
 .pd-review-list { display: flex; flex-direction: column; gap: 20px; }
 .pd-review-item {
-  padding: 20px 22px;
+  padding: 20px;
   background: #fff;
-  border: 1.5px solid #eff4f1;
-  border-radius: 14px;
+  border: 1px solid #eef2ee;
+  border-radius: 12px;
 }
-.pd-rv-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
+.pd-rv-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .pd-rv-avatar {
   width: 40px; height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #2d8c4e, #4ade80);
+  background: linear-gradient(135deg, #2d8c4e, #1a5c2e);
   color: #fff;
-  font-size: 17px;
-  font-weight: 800;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px;
   flex-shrink: 0;
 }
-.pd-rv-meta { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.pd-rv-name { font-size: 14px; font-weight: 700; color: #222; }
-.pd-rv-stars { display: flex; gap: 2px; }
+.pd-rv-meta { flex: 1; }
+.pd-rv-name { font-size: 14px; color: #222; }
+.pd-rv-stars { display: flex; gap: 2px; margin-top: 3px; }
 .pd-rv-star { font-size: 13px; color: #ddd; }
 .pd-rv-star.filled { color: #f5a623; }
 .pd-rv-date { font-size: 12px; color: #aaa; }
-.pd-rv-text { font-size: 14px; color: #444; line-height: 1.7; }
-.pd-rv-verified { font-size: 12px; color: #16a34a; font-weight: 600; margin-top: 8px; }
+.pd-rv-text { font-size: 14px; color: #444; line-height: 1.7; margin-bottom: 8px; }
+.pd-rv-verified { font-size: 11.5px; color: #16a34a; font-weight: 600; }
 
 /* ─────────────────────────────────────────
    RELATED PRODUCTS
 ───────────────────────────────────────── */
-.pd-related {
-  padding-bottom: 56px;
-}
+.pd-related { padding-bottom: 60px; }
 .pd-related-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 20px;
 }
-.pd-related-title {
-  font-size: 20px;
-  font-weight: 900;
-  color: #1a1a1a;
-}
-.pd-related-all {
-  font-size: 13.5px;
-  color: #2d8c4e;
-  text-decoration: none;
-  font-weight: 600;
-}
+.pd-related-title { font-size: 20px; font-weight: 800; color: #1a5c2e; }
+.pd-related-all { font-size: 13px; color: #2d8c4e; text-decoration: none; font-weight: 600; }
 .pd-related-all:hover { text-decoration: underline; }
 .pd-related-grid {
   display: grid;
@@ -1248,87 +984,52 @@ watch(allImages, (imgs) => {
   gap: 14px;
 }
 .pd-rel-card {
-  background: #fff;
-  border: 1.5px solid #ebebeb;
+  border: 1.5px solid #e8ede9;
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
+  background: #fff;
   transition: all .2s;
 }
-.pd-rel-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(45,140,78,.14);
-  border-color: #b5d9c3;
-}
-.pd-rel-img-wrap {
-  background: #f8fdf9;
-  height: 150px;
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-}
-.pd-rel-img-wrap img {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-  transition: transform .3s;
-}
-.pd-rel-card:hover .pd-rel-img-wrap img { transform: scale(1.05); }
-.pd-rel-info { padding: 10px 12px 12px; }
-.pd-rel-name {
-  font-size: 12.5px;
-  color: #333;
-  font-weight: 500;
-  line-height: 1.4;
-  height: 34px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  margin-bottom: 5px;
-}
-.pd-rel-price {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #e03131;
-}
+.pd-rel-card:hover { border-color: #2d8c4e; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(45,140,78,.12); }
+.pd-rel-img-wrap { aspect-ratio: 1; background: #f8fdf9; padding: 10px; }
+.pd-rel-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.pd-rel-info { padding: 10px 12px; }
+.pd-rel-name { font-size: 12.5px; color: #333; font-weight: 500; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pd-rel-price { font-size: 13.5px; font-weight: 800; color: #e03131; }
 
 /* ─────────────────────────────────────────
    TOAST
 ───────────────────────────────────────── */
 .pd-toast {
   position: fixed;
-  bottom: 32px; left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  padding: 13px 28px;
-  border-radius: 50px;
+  bottom: 28px; right: 28px;
+  padding: 14px 22px;
+  border-radius: 10px;
   font-size: 14px; font-weight: 600;
-  box-shadow: 0 8px 32px rgba(0,0,0,.2);
-  pointer-events: none; white-space: nowrap;
+  color: #fff;
+  z-index: 9999;
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  max-width: 340px;
 }
-.pd-toast.success { background: #1a6e35; color: #fff; }
-.pd-toast.error   { background: #c62828; color: #fff; }
-.pd-toast.warning { background: #d46b08; color: #fff; }
-.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity .3s, transform .3s; }
-.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(16px); }
+.pd-toast.success { background: #1a5c2e; }
+.pd-toast.error   { background: #dc2626; }
+.pd-toast.warning { background: #d97706; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all .3s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(16px); }
 
 /* ─────────────────────────────────────────
    RESPONSIVE
 ───────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .pd-main { grid-template-columns: 380px 1fr; gap: 24px; }
-  .pd-related-grid { grid-template-columns: repeat(4, 1fr); }
-}
 @media (max-width: 900px) {
   .pd-main { grid-template-columns: 1fr; }
   .pd-gallery { position: static; }
-  .pd-related-grid { grid-template-columns: repeat(3, 1fr); }
+  .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 640px) {
-  .pd-title { font-size: 20px; }
+@media (max-width: 600px) {
+  .pd-title { font-size: 18px; }
   .pd-price-main { font-size: 28px; }
   .pd-actions { flex-direction: column; }
   .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
-  .pd-reviews-summary { flex-direction: column; gap: 20px; }
 }
 </style>

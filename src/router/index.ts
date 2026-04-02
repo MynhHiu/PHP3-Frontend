@@ -14,6 +14,8 @@ const VariantCreate = () => import('@/admin/views/VariantCreate.vue')
 const VariantAssign = () => import('@/admin/views/VariantAssign.vue')
 const OrderList = () => import('@/admin/views/OrderList.vue')
 const UserList = () => import('@/admin/views/UserList.vue')
+const CouponList = () => import('@/admin/views/CouponList.vue')
+const CouponForm = () => import('@/admin/views/CouponForm.vue')
 
 const UserLayout = () => import('@/user/layouts/UserLayout.vue')
 const HomeView = () => import('@/user/views/HomeView.vue')
@@ -52,6 +54,9 @@ const router = createRouter({
         { path: 'brands/:id/edit', component: BrandForm, name: 'brand-edit' },
         { path: 'orders', component: OrderList, name: 'orders' },
         { path: 'users', component: UserList, name: 'users' },
+        { path: 'coupons', component: CouponList, name: 'coupons' },
+        { path: 'coupons/create', component: CouponForm, name: 'coupon-create' },
+        { path: 'coupons/:code/edit', component: CouponForm, name: 'coupon-edit' },
         { path: 'variants', component: VariantList, name: 'variants' },
         { path: 'variants/create', component: VariantCreate, name: 'variant-create' },
         { path: 'variants/:id/edit', component: VariantCreate, name: 'variant-edit' },

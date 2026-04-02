@@ -11,9 +11,9 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
+  // Lấy cả 2 token: admin và user
+  const token = localStorage.getItem('admin_token') 
              || localStorage.getItem('user_token')
-             || localStorage.getItem('admin_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -201,8 +201,26 @@ export const authApi = {
     email: string,
     otp: string,
     password: string,
-    password_confirmation: string,
-  ) => api.post('/auth/reset-password', {
-    email, otp, password, password_confirmation,
-  }).then(r => r.data),
+    password_confirmation: string
+  ) =>
+    api.post('/auth/reset-password', {
+      email, otp, password, password_confirmation,
+    }).then(r => r.data),
+}
+
+// ── Coupons ───────────────────────────────────
+export const couponApi = {
+  getAll:  (params = {}) => api.get('/admin/coupons', { params }),
+  getOne:  (code: string) => api.get(`/admin/coupons/${code}`),
+  create:  (data: Record<string, any>) => api.post('/admin/coupons', data),
+  update:  (code: string, data: Record<string, any>) => api.put(`/admin/coupons/${code}`, data),
+  delete:  (code: string) => api.delete(`/admin/coupons/${code}`),
+
+  // Dùng ở trang checkout (public)
+  apply: (code: string, order_total: number) =>
+    api.post('/apply-coupon', { code, order_total }),
+
+  // Ghi nhận user đã dùng mã
+  markUsed: (code: string, user_id: number) =>
+    api.post(`/admin/coupons/${code}/use`, { user_id }),
 }

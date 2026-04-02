@@ -8,11 +8,9 @@ const api = axios.create({
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
-  // KHÔNG có withCredentials
 })
 
 api.interceptors.request.use((config) => {
-  // Lấy token ưu tiên từ user/session mới nhất, sau đó admin (trang quản trị)
   const token = localStorage.getItem('token')
              || localStorage.getItem('user_token')
              || localStorage.getItem('admin_token')
@@ -28,7 +26,9 @@ api.interceptors.response.use(
   }
 )
 
-// ── Categories ────────────────────────────────
+export default api
+
+// ── Categories ────────────────────────────────────────────────────────────────
 export const categoryApi = {
   getAll:  (params = {}) => api.get('/admin/categories', { params }),
   getOne:  (id: number)  => api.get(`/admin/categories/${id}`),
@@ -44,7 +44,7 @@ export const categoryApi = {
   delete:  (id: number) => api.delete(`/admin/categories/${id}`),
 }
 
-// ── Products ──────────────────────────────────
+// ── Products ──────────────────────────────────────────────────────────────────
 export const productApi = {
   getAll:  (params = {}) => api.get('/admin/products', { params }),
   getOne:  (id: number)  => api.get(`/admin/products/${id}`),
@@ -60,9 +60,7 @@ export const productApi = {
   delete:  (id: number) => api.delete(`/admin/products/${id}`),
 }
 
-export default api
-
-// ── Brands ────────────────────────────────────
+// ── Brands ────────────────────────────────────────────────────────────────────
 export const brandApi = {
   getAll:  (params = {}) => api.get('/admin/brands', { params }),
   getOne:  (id: number)  => api.get(`/admin/brands/${id}`),
@@ -76,42 +74,38 @@ export const brandApi = {
     })
   },
   delete:  (id: number) => api.delete(`/admin/brands/${id}`),
-
 }
 
-// ── Product Variants ──────────────────────────
+// ── Product Variants ──────────────────────────────────────────────────────────
 export const variantApi = {
-  // CRUD variant
   getVariants:   (productId: number) =>
     api.get(`/admin/products/${productId}/variants`),
   createVariant: (productId: number, data: {
-    variant_name: string   // VARCHAR(255)
-    product_id: number     // INT(11)
+    variant_name: string
+    product_id: number
   }) => api.post(`/admin/products/${productId}/variants`, data),
   updateVariant: (id: number, data: { variant_name: string }) =>
     api.put(`/admin/variants/${id}`, data),
   deleteVariant: (id: number) => api.delete(`/admin/variants/${id}`),
- 
-  // CRUD variant_options — cột: id, product_variant_id, option_values (INT), created_at
-  getOptions:    (variantId: number) =>
+
+  getOptions:   (variantId: number) =>
     api.get(`/admin/variants/${variantId}/options`),
-  createOption:  (variantId: number, data: {
-    product_variant_id: number  // INT(11)
-    option_values: number        // INT(11) — database lưu số
+  createOption: (variantId: number, data: {
+    product_variant_id: number
+    option_values: number
   }) => api.post(`/admin/variants/${variantId}/options`, data),
-  updateOption:  (id: number, data: { option_values: number }) =>
+  updateOption: (id: number, data: { option_values: number }) =>
     api.put(`/admin/variant-options/${id}`, data),
-  deleteOption:  (id: number) => api.delete(`/admin/variant-options/${id}`),
- 
-  // CRUD product_skus — cột: sku_code, product_id, price, quantity, status, created_at, updated_at
+  deleteOption: (id: number) => api.delete(`/admin/variant-options/${id}`),
+
   getSkus:   (productId: number) =>
     api.get(`/admin/products/${productId}/skus`),
   createSku: (productId: number, data: {
-    sku_code: string        // VARCHAR(255)
-    product_id: number      // INT(11)
-    price: number           // DECIMAL(10,2)
-    quantity: number        // INT(11)
-    status: string          // VARCHAR(50)
+    sku_code: string
+    product_id: number
+    price: number
+    quantity: number
+    status: string
   }) => api.post(`/admin/products/${productId}/skus`, data),
   updateSku: (skuCode: string, data: Partial<{
     price: number
@@ -119,31 +113,40 @@ export const variantApi = {
     status: string
   }>) => api.put(`/admin/skus/${skuCode}`, data),
   deleteSku: (skuCode: string) => api.delete(`/admin/skus/${skuCode}`),
- 
-  // CRUD product_combination_options — cột: id, options_id, sku_code, created_at
+
   getCombinationOptions: (skuCode: string) =>
     api.get(`/admin/skus/${skuCode}/combination-options`),
   createCombinationOption: (data: {
-    options_id: number  // INT(11) FK → variant_options.id
-    sku_code: string    // VARCHAR(255) FK → product_skus.sku_code
+    options_id: number
+    sku_code: string
   }) => api.post('/admin/combination-options', data),
   deleteCombinationOption: (id: number) =>
     api.delete(`/admin/combination-options/${id}`),
- 
-  // Trang VariantAssign: lấy danh sách tất cả variant (không lọc theo product)
+
   getAllVariants: (params = {}) =>
     api.get('/admin/variants', { params }),
- 
-  // Gán variant vào product (dùng trong trang VariantAssign)
   assignVariantToProduct: (productId: number, variantId: number) =>
     api.post(`/admin/products/${productId}/variants/assign`, { variant_id: variantId }),
 }
 
-// ── Orders ────────────────────────────────────
+// ── Orders (Admin) ────────────────────────────────────────────────────────────
 export const orderApi = {
-  getAll:    (params = {}) => api.get('/admin/orders', { params }),
-  getOne:    (id: number)  => api.get(`/admin/orders/${id}`),
-  updateStatus: (id: number, status: string) => api.patch(`/admin/orders/${id}/status`, { status }),
+  getAll:       (params = {}) => api.get('/admin/orders', { params }),
+  getOne:       (id: number)  => api.get(`/admin/orders/${id}`),
+  updateStatus: (id: number, status: string) =>
+    api.patch(`/admin/orders/${id}/status`, { status }),
+}
+
+// ── Orders (User) ─────────────────────────────────────────────────────────────
+export const userOrderApi = {
+  // GET /api/orders — danh sách đơn hàng của user đang đăng nhập
+  getAll: () => api.get('/orders'),
+
+  // GET /api/orders/{id} — chi tiết 1 đơn hàng
+  getOne: (id: number) => api.get(`/orders/${id}`),
+
+  // PATCH /api/orders/{id}/cancel — huỷ đơn (chỉ khi status = pending)
+  cancel: (id: number) => api.patch(`/orders/${id}/cancel`),
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -163,7 +166,16 @@ export const userApi = {
   toggleStatus: (id: number) => api.patch(`/admin/users/${id}/toggle-status`),
 }
 
-// ── AUTH ─────────────────────────────────────────────────────────────────────
+// ── Cart ──────────────────────────────────────────────────────────────────────
+export const cartApi = {
+  getAll:         ()                                       => api.get('/cart'),
+  add:            (product_sku_code: string, quantity = 1) => api.post('/cart', { product_sku_code, quantity }),
+  updateQuantity: (id: number, quantity: number)           => api.put(`/cart/${id}`, { quantity }),
+  remove:         (id: number)                             => api.delete(`/cart/${id}`),
+  clear:          ()                                       => api.delete('/cart'),
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   register: (data: {
     fullname: string
@@ -171,8 +183,7 @@ export const authApi = {
     phone: string
     password: string
     address?: string
-  }) =>
-    api.post('/auth/register', data).then(r => r.data),
+  }) => api.post('/auth/register', data).then(r => r.data),
 
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }).then(r => r.data),
@@ -190,9 +201,8 @@ export const authApi = {
     email: string,
     otp: string,
     password: string,
-    password_confirmation: string
-  ) =>
-    api.post('/auth/reset-password', {
-      email, otp, password, password_confirmation,
-    }).then(r => r.data),
+    password_confirmation: string,
+  ) => api.post('/auth/reset-password', {
+    email, otp, password, password_confirmation,
+  }).then(r => r.data),
 }

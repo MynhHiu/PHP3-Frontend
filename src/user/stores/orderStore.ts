@@ -1,84 +1,78 @@
 // src/user/stores/orderStore.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import api from '@/api/index'
 
 export interface OrderDetail {
   id: number
   product_sku_code: string
-  quantity: number
   orders_id: number
-  product?: { name: string; image_url: string; price: number }
+  quantity: number
+  product_sku?: {
+    product?: {
+      name: string
+      image_url?: string
+      price?: number
+    }
+  }
 }
 
 export interface Order {
   id: number
   user_id: number
   email: string
-  phone: string
+  phone: number
   address: string
   total: number
   payment: string
   status: string
   created_at: string
-  order_details?: OrderDetail[]
-}
-
-export interface CheckoutPayload {
-  email: string
-  phone: string
-  address: string
-  payment: string
-  coupon_code?: string
-  items: { product_sku_code: string; quantity: number }[]
-}
-
-function getOrders(): Order[] {
-  try { return JSON.parse(localStorage.getItem('mock_orders') || '[]') }
-  catch { return [] }
-}
-function saveOrders(o: Order[]) {
-  localStorage.setItem('mock_orders', JSON.stringify(o))
+  order_details: OrderDetail[]
 }
 
 export const useOrderStore = defineStore('order', () => {
-  const orders  = ref<Order[]>(getOrders())
-  const current = ref<Order | null>(null)
+  const orders  = ref<Order[]>([])
   const loading = ref(false)
   const error   = ref<string | null>(null)
 
+  // ── Lấy danh sách đơn hàng ──────────────────────────────────────────────
   async function fetchOrders() {
-    orders.value = getOrders()
-  }
-
-  async function fetchOrder(id: number) {
-    current.value = getOrders().find(o => o.id === id) ?? null
-  }
-
-  async function checkout(payload: CheckoutPayload) {
-    await new Promise(r => setTimeout(r, 800))
-    const newOrder: Order = {
-      id:         Date.now(),
-      user_id:    0,
-      email:      payload.email,
-      phone:      payload.phone,
-      address:    payload.address,
-      total:      0,
-      payment:    payload.payment,
-      status:     'pending',
-      created_at: new Date().toISOString(),
+    loading.value = true
+    error.value   = null
+    try {
+      const res   = await api.get('/orders')
+      orders.value = res.data.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Không thể tải đơn hàng.'
+    } finally {
+      loading.value = false
     }
-    const all = [newOrder, ...getOrders()]
-    saveOrders(all)
-    orders.value = all
-    return newOrder
   }
 
+  // ── Lấy chi tiết 1 đơn hàng ─────────────────────────────────────────────
+  async function fetchOrder(id: number): Promise<Order | null> {
+    try {
+      const res = await api.get(`/orders/${id}`)
+      return res.data.data
+    } catch {
+      return null
+    }
+  }
+
+  // ── Huỷ đơn hàng ────────────────────────────────────────────────────────
   async function cancelOrder(id: number) {
-    const all = getOrders().map(o => o.id === id ? { ...o, status: 'cancelled' } : o)
-    saveOrders(all)
-    orders.value = all
-    if (current.value?.id === id) current.value.status = 'cancelled'
+    try {
+      await api.patch(`/orders/${id}/cancel`)
+      // Cập nhật lại status trong danh sách local
+      const order = orders.value.find(o => o.id === id)
+      if (order) order.status = 'cancelled'
+    } catch (err: any) {
+      throw err
+    }
   }
 
-  return { orders, current, loading, error, fetchOrders, fetchOrder, checkout, cancelOrder }
+  return {
+    orders, loading, error,
+    fetchOrders, fetchOrder, cancelOrder,
+  }
 })

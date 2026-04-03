@@ -8,6 +8,8 @@ export interface Coupon {
   discount:      string   // VD: "20%" hoặc "50000"
   description:   string
   minordervalue: number
+  expires_at?:         string | null
+  is_birthday_coupon?: boolean
   usages_count?: number
   created_at?:   string
 }

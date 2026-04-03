@@ -6,20 +6,25 @@
         <p>Tổng {{ store.coupons.length }} mã</p>
       </div>
       <router-link to="/admin/coupons/create" class="btn btn-primary">
-        <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
         Thêm mã giảm giá
       </router-link>
     </div>
 
     <div class="filter-bar">
       <input v-model="search" @input="debouncedFilter" placeholder="Tìm mã hoặc mô tả..." class="input" />
-      <button v-if="search" @click="search = ''" class="btn btn-outline btn-sm" style="color:var(--red-500);border-color:var(--red-100)">✕ Xóa lọc</button>
+      <button v-if="search" @click="search = ''" class="btn btn-outline btn-sm"
+        style="color:var(--red-500);border-color:var(--red-100)">✕ Xóa lọc</button>
     </div>
 
     <div class="table-card">
       <div v-if="store.loading" class="loading-state">
-        <svg class="animate-spin" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        <svg class="animate-spin" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path
+            d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
         </svg>
         Đang tải...
       </div>
@@ -46,13 +51,15 @@
             <th>Đã dùng</th>
             <th>Mô tả</th>
             <th>Ngày tạo</th>
+            <th>Hết hạn</th>
             <th class="text-right">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="c in filtered" :key="c.coupon_code">
             <td>
-              <span style="font-family:monospace;font-weight:700;font-size:13px;color:var(--brand);background:var(--brand-50,#eff6ff);padding:3px 8px;border-radius:5px;letter-spacing:0.5px">
+              <span
+                style="font-family:monospace;font-weight:700;font-size:13px;color:var(--brand);background:var(--brand-50,#eff6ff);padding:3px 8px;border-radius:5px;letter-spacing:0.5px">
                 {{ c.coupon_code }}
               </span>
             </td>
@@ -67,24 +74,39 @@
             <td style="font-size:13px;color:var(--gray-600)">
               {{ c.usages_count ?? 0 }} lượt
             </td>
-            <td style="font-size:13px;color:var(--gray-600);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <td
+              style="font-size:13px;color:var(--gray-600);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
               {{ c.description }}
             </td>
             <td style="font-size:12px;color:var(--gray-400)">
               {{ fmtDate(c.created_at) }}
             </td>
+            <td style="font-size:12px;">
+              <span v-if="!c.expires_at" style="color:var(--gray-400)">—</span>
+              <span v-else-if="new Date(c.expires_at) < new Date()" style="color:var(--red-500);font-weight:600">
+                {{ fmtDate(c.expires_at) }}
+              </span>
+              <span v-else style="color:var(--green-600)">
+                {{ fmtDate(c.expires_at) }}
+              </span>
+            </td>
+
             <td>
               <div class="row-actions">
-                <button @click="router.push('/admin/coupons/' + c.coupon_code + '/edit')" class="btn-icon edit" title="Sửa">
-                  <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                <button @click="router.push('/admin/coupons/' + c.coupon_code + '/edit')" class="btn-icon edit"
+                  title="Sửa">
+                  <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
                 </button>
                 <button @click="confirmDel(c)" class="btn-icon delete" title="Xóa">
-                  <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                  <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
                   </svg>
                 </button>
               </div>
@@ -130,7 +152,7 @@ import { useRouter } from 'vue-router'
 import { useCouponStore } from '@/admin/stores/couponStore'
 import type { Coupon } from '@/admin/stores/couponStore'
 
-const store  = useCouponStore()
+const store = useCouponStore()
 const router = useRouter()
 const search = ref('')
 
@@ -144,8 +166,8 @@ const filtered = computed(() => {
 })
 
 const delTarget = ref<Coupon | null>(null)
-const deleting  = ref(false)
-const toast     = ref<{ msg: string; type: string } | null>(null)
+const deleting = ref(false)
+const toast = ref<{ msg: string; type: string } | null>(null)
 
 const fmtMoney = (v?: number | null) =>
   v ? v.toLocaleString('vi-VN') + '₫' : '0₫'
@@ -153,7 +175,7 @@ const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('vi-VN') : '—'
 
 let timer: ReturnType<typeof setTimeout>
-function debouncedFilter() { clearTimeout(timer); timer = setTimeout(() => {}, 200) }
+function debouncedFilter() { clearTimeout(timer); timer = setTimeout(() => { }, 200) }
 
 function showToast(msg: string, type: string) {
   toast.value = { msg, type }

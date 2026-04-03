@@ -146,7 +146,7 @@
                 :class="{ active: activeCatId === cat.id }"
                 @click="selectCategory(cat.id)"
               >
-                <span class="ls-cat-ico">📂</span>
+                
                 <span class="ls-cat-name">{{ cat.name }}</span>
                 <span v-if="cat.children && cat.children.length" class="ls-cat-arrow">›</span>
               </a>
@@ -179,7 +179,7 @@
             <button
               v-for="r in priceRanges" :key="r.label"
               :class="['pf-btn', { active: activePriceRange === r.label }]"
-              @click="activePriceRange = r.label"
+              @click="selectPriceRange(r.label)"
             >{{ r.label }}</button>
           </div>
         </div>
@@ -191,7 +191,11 @@
             Thương hiệu
           </div>
           <div class="brand-tags">
-            <span v-for="b in brands" :key="b" class="brand-tag">{{ b }}</span>
+            <span
+              v-for="b in brands" :key="b.id"
+              :class="['brand-tag', { active: activeBrand === b.id }]"
+              @click="selectBrand(b.id)"
+            >{{ b.name }}</span>
           </div>
         </div>
       </aside>
@@ -372,7 +376,8 @@ const priceRanges = [
   { label: 'Trên 10 triệu', min: 10000000, max: Infinity },
 ]
 
-const brands = ['Samsung', 'LG', 'Panasonic', 'Daikin', 'Mitsubishi', 'Electrolux', 'Toshiba']
+interface Brand { id: number; name: string }
+const brands = ref<Brand[]>([])
 
 const sortOptions = [
   { key: 'default', label: 'Mặc định' },
@@ -402,9 +407,21 @@ async function fetchCategories() {
   }
 }
 
+async function fetchBrands() {
+  try {
+    const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+    const res  = await fetch(`${BASE}/brands`)
+    if (!res.ok) throw new Error('fetch failed')
+    brands.value = await res.json()
+  } catch (e) {
+    console.error('Không tải được thương hiệu:', e)
+  }
+}
+
 /* ── State ─────────────────────────────────────────────────────── */
-const activeCatId      = ref<number | null>(null)   // null = tất cả
+const activeCatId      = ref<number | null>(null)
 const activePriceRange = ref('')
+const activeBrand      = ref<number | null>(null)
 const activeSort       = ref('default')
 const currentPage      = ref(1)
 const PAGE_SIZE        = 12
@@ -416,6 +433,18 @@ function selectCategory(id: number | null) {
   const params: Record<string, any> = { per_page: 48 }
   if (id !== null) params.category_id = id
   productStore.fetchProducts(params).catch(() => {})
+}
+
+/** Chọn / bỏ chọn khoảng giá */
+function selectPriceRange(label: string) {
+  activePriceRange.value = activePriceRange.value === label ? '' : label
+  currentPage.value = 1
+}
+
+/** Chọn / bỏ chọn thương hiệu */
+function selectBrand(id: number) {
+  activeBrand.value = activeBrand.value === id ? null : id
+  currentPage.value = 1
 }
 
 /* ── Helpers ────────────────────────────────────────────────────── */
@@ -431,6 +460,9 @@ const filteredProducts = computed(() => {
   if (activePriceRange.value) {
     const range = priceRanges.find(r => r.label === activePriceRange.value)
     if (range) list = list.filter(p => (p.price || 0) >= range.min && (p.price || 0) <= range.max)
+  }
+  if (activeBrand.value !== null) {
+    list = list.filter(p => p.brand?.id === activeBrand.value)
   }
   if (activeSort.value === 'price_asc')  list.sort((a, b) => (a.price || 0) - (b.price || 0))
   if (activeSort.value === 'price_desc') list.sort((a, b) => (b.price || 0) - (a.price || 0))
@@ -450,6 +482,7 @@ const displayedProducts = computed(() => {
 onMounted(async () => {
   bannerTimer = setInterval(nextBanner, 4500)
   await fetchCategories()
+  await fetchBrands()
   productStore.fetchProducts({ per_page: 48 }).catch(() => {})
 })
 onUnmounted(() => {
@@ -860,6 +893,7 @@ onUnmounted(() => {
   transition: all .15s;
 }
 .brand-tag:hover { background: #2d8c4e; color: #fff; border-color: #2d8c4e; }
+.brand-tag.active { background: #2d8c4e; color: #fff; border-color: #2d8c4e; box-shadow: 0 2px 8px rgba(45,140,78,.3); }
 
 /* ─── PRODUCT CONTENT ─── */
 .product-content { min-width: 0; }

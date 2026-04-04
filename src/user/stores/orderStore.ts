@@ -30,6 +30,15 @@ export interface Order {
   order_details: OrderDetail[]
 }
 
+export interface CheckoutPayload {
+  email: string
+  phone: string
+  address: string
+  payment: string
+  coupon_code?: string
+  items: { product_sku_code: string; quantity: number }[]
+}
+
 export const useOrderStore = defineStore('order', () => {
   const orders  = ref<Order[]>([])
   const loading = ref(false)
@@ -40,7 +49,7 @@ export const useOrderStore = defineStore('order', () => {
     loading.value = true
     error.value   = null
     try {
-      const res   = await api.get('/orders')
+      const res    = await api.get('/orders')
       orders.value = res.data.data
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Không thể tải đơn hàng.'
@@ -63,7 +72,6 @@ export const useOrderStore = defineStore('order', () => {
   async function cancelOrder(id: number) {
     try {
       await api.patch(`/orders/${id}/cancel`)
-      // Cập nhật lại status trong danh sách local
       const order = orders.value.find(o => o.id === id)
       if (order) order.status = 'cancelled'
     } catch (err: any) {
@@ -71,8 +79,13 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  async function checkout(payload: CheckoutPayload): Promise<Order> {
+    const res = await api.post('/checkout', payload)
+    return res.data.data
+  }
+
   return {
     orders, loading, error,
-    fetchOrders, fetchOrder, cancelOrder,
+    fetchOrders, fetchOrder, cancelOrder, checkout,
   }
 })

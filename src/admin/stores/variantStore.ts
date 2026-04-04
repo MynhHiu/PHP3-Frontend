@@ -1,159 +1,230 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { variantApi } from '@/api'
+import { useAuthStore } from './authStore'
 
-// ── Khớp với bảng `product_variants` ──────────────────────────────────────
-export interface ProductVariant {
-  id: number
-  variant_name: string   // VARCHAR(255)
-  product_id: number     // INT(11)
-  created_at?: string    // DATETIME
-  options?: VariantOption[]
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// ── Khớp với bảng `variant_options` ───────────────────────────────────────
 export interface VariantOption {
   id: number
-  product_variant_id: number  // INT(11) FK → product_variants.id
-  option_values: number        // INT(11)  ← database lưu số (ví dụ: ID của giá trị)
-  option_label?: string        // label hiển thị (frontend tự quản lý, không có trong DB)
-  created_at?: string
+  product_variant_id: number
+  option_values: string   // text (VD: "Đỏ", "XL", "500ml")
 }
 
-// ── Khớp với bảng `product_skus` ──────────────────────────────────────────
-export interface ProductSku {
-  sku_code: string        // VARCHAR(255) PRIMARY KEY
-  product_id: number      // INT(11) FK → products.id
-  price: number           // DECIMAL(10,2)
-  quantity: number        // INT(11)
-  status: string          // VARCHAR(50) — 'active' | 'inactive'
-  created_at?: string     // DATETIME
-  updated_at?: string     // DATETIME
-  combination?: string    // Frontend only: tên ghép từ options
-}
-
-// ── Khớp với bảng `product_combination_options` ───────────────────────────
-export interface ProductCombinationOption {
+export interface ProductVariant {
   id: number
-  options_id: number      // INT(11) FK → variant_options.id
-  sku_code: string        // VARCHAR(255) FK → product_skus.sku_code
-  created_at: string      // DATETIME
+  variant_name: string
+  product_id: number
+  options: VariantOption[]
 }
+
+export interface ProductCombination {
+  id: number
+  options_id: number
+  sku_code: string
+  option?: VariantOption & { variant?: ProductVariant }
+}
+
+export interface SkuRow {
+  sku_code: string
+  product_id: number
+  price: number
+  quantity: number
+  status: 'active' | 'draft' | 'hidden'
+  combination?: string   // label hiển thị, không lưu DB
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useVariantStore = defineStore('variant', () => {
-  const variants    = ref<ProductVariant[]>([])
-  const skus        = ref<ProductSku[]>([])
-  const combinations = ref<ProductCombinationOption[]>([])
-  const loading     = ref(false)
-  const error       = ref<string | null>(null)
+  const variants = ref<ProductVariant[]>([])
+  const skus = ref<SkuRow[]>([])
+  const combinations = ref<ProductCombination[]>([])
+  const loading = ref(false)
 
-  // ── Variants ──────────────────────────────────────────────────────────
+  const API = () => {
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+    return base.endsWith('/api') ? base : base + '/api'
+  }
+
+  function headers(): Record<string, string> {
+    const auth = useAuthStore()
+    const h: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' }
+    if (auth.token) h['Authorization'] = `Bearer ${auth.token}`
+    return h
+  }
+
+  async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const res = await fetch(`${API()}/admin/${path}`, {
+      method,
+      headers: headers(),
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      const msg = err.message || `HTTP ${res.status}`
+      const e = new Error(msg) as Error & { userMessage: string }
+      e.userMessage = msg
+      throw e
+    }
+    if (res.status === 204) return undefined as T
+    return res.json()
+  }
+
+  // ── Variants ──────────────────────────────────────────────────────────────
+
   async function fetchVariants(productId: number) {
-    loading.value = true; error.value = null
+    loading.value = true
     try {
-      const res = await variantApi.getVariants(productId)
-      variants.value = res.data.data ?? res.data
-    } catch (e: any) {
-      error.value = e.userMessage || 'Không thể tải biến thể'
-      variants.value = []
-    } finally { loading.value = false }
+      variants.value = await req<ProductVariant[]>('GET', `products/${productId}/variants`)
+    } finally {
+      loading.value = false
+    }
   }
 
-  async function createVariant(productId: number, variantName: string) {
-    // POST body: { variant_name, product_id }
-    const res = await variantApi.createVariant(productId, {
+  async function createVariant(productId: number, variantName: string): Promise<ProductVariant> {
+    const created = await req<ProductVariant>('POST', `products/${productId}/variants`, {
       variant_name: variantName,
-      product_id: productId,
     })
-    const v: ProductVariant = res.data.data ?? res.data
-    variants.value.push({ ...v, options: [] })
-    return v
+    variants.value.push(created)
+    return created
   }
 
-  async function updateVariant(id: number, variantName: string) {
-    // PUT body: { variant_name }
-    await variantApi.updateVariant(id, { variant_name: variantName })
-    const v = variants.value.find(x => x.id === id)
-    if (v) v.variant_name = variantName
-  }
-
-  async function deleteVariant(id: number) {
-    await variantApi.deleteVariant(id)
-    variants.value = variants.value.filter(v => v.id !== id)
-  }
-
-  // ── Variant Options ───────────────────────────────────────────────────
-  async function createOption(variantId: number, optionValues: number, optionLabel?: string) {
-    // POST body: { product_variant_id, option_values }
-    // option_values là INT(11) theo database
-    const res = await variantApi.createOption(variantId, {
-      product_variant_id: variantId,
-      option_values: optionValues,
+  async function updateVariant(variantId: number, variantName: string) {
+    const updated = await req<ProductVariant>('PUT', `variants/${variantId}`, {
+      variant_name: variantName,
     })
-    const opt: VariantOption = { ...(res.data.data ?? res.data), option_label: optionLabel }
-    const v = variants.value.find(x => x.id === variantId)
-    if (v) { if (!v.options) v.options = []; v.options.push(opt) }
-    return opt
+    const idx = variants.value.findIndex(v => v.id === variantId)
+    if (idx !== -1) variants.value[idx] = updated
+  }
+
+  async function deleteVariant(variantId: number) {
+    await req('DELETE', `variants/${variantId}`)
+    variants.value = variants.value.filter(v => v.id !== variantId)
+  }
+
+  // ── Options ───────────────────────────────────────────────────────────────
+
+  async function createOption(variantId: number, optionValue: string): Promise<VariantOption> {
+    const created = await req<VariantOption>('POST', `variants/${variantId}/options`, {
+      option_values: optionValue,
+    })
+    const variant = variants.value.find(v => v.id === variantId)
+    if (variant) variant.options.push(created)
+    return created
   }
 
   async function deleteOption(variantId: number, optionId: number) {
-    await variantApi.deleteOption(optionId)
-    const v = variants.value.find(x => x.id === variantId)
-    if (v?.options) v.options = v.options.filter(o => o.id !== optionId)
+    await req('DELETE', `options/${optionId}`)
+    const variant = variants.value.find(v => v.id === variantId)
+    if (variant) variant.options = variant.options.filter(o => o.id !== optionId)
   }
 
-  // ── SKUs ──────────────────────────────────────────────────────────────
+  // ── SKUs ──────────────────────────────────────────────────────────────────
+
   async function fetchSkus(productId: number) {
-    try {
-      const res = await variantApi.getSkus(productId)
-      skus.value = res.data.data ?? res.data
-    } catch { skus.value = [] }
+    const res = await fetch(`${API()}/admin/products/${productId}`, { headers: headers() })
+    if (!res.ok) return
+    const data = await res.json()
+    skus.value = (data.skus ?? []).map((s: SkuRow) => ({ ...s, combination: '' }))
   }
 
-  async function saveSku(productId: number, sku: Partial<ProductSku> & { sku_code: string }) {
-    const existing = skus.value.find(s => s.sku_code === sku.sku_code)
-    // Loại bỏ field combination vì không có trong DB (frontend only)
-    const { combination, ...skuData } = sku as any
-    if (existing) {
-      await variantApi.updateSku(sku.sku_code, skuData)
-      Object.assign(existing, sku)
-    } else {
-      // POST body: { sku_code, product_id, price, quantity, status }
-      const res = await variantApi.createSku(productId, {
-        ...skuData,
-        product_id: productId,
+  async function saveSku(productId: number, sku: Partial<SkuRow>) {
+    // Kiểm tra đã tồn tại chưa (updateOrCreate qua backend)
+    const fd = new FormData()
+    fd.append('_method', 'PUT')
+    fd.append('name', '')             // placeholder, backend sẽ giữ nguyên
+    // Dùng endpoint riêng của SKU nếu có, hoặc dùng product update
+    // Hiện tại dùng product update với skus array
+    const existing = skus.value.map(s => ({
+      sku_code: s.sku_code,
+      price: s.sku_code === sku.sku_code ? sku.price! : s.price,
+      quantity: s.sku_code === sku.sku_code ? sku.quantity! : s.quantity,
+      status: s.sku_code === sku.sku_code ? sku.status! : s.status,
+    }))
+
+    // Nếu là SKU mới thì thêm vào
+    if (!skus.value.find(s => s.sku_code === sku.sku_code)) {
+      existing.push({
+        sku_code: sku.sku_code!,
+        price: sku.price!,
+        quantity: sku.quantity!,
+        status: sku.status!,
       })
-      skus.value.push({ ...(res.data.data ?? res.data), combination })
+    }
+
+    const skuFd = new FormData()
+    skuFd.append('_method', 'PUT')
+
+    // Lấy thông tin product hiện tại để giữ nguyên các field
+    const pRes = await fetch(`${API()}/admin/products/${productId}`, { headers: { Authorization: headers().Authorization ?? "", Accept: 'application/json' } })
+    const pData = await pRes.json()
+    skuFd.append('name', pData.name)
+    skuFd.append('categories_id', String(pData.categories_id))
+    if (pData.brand_id) skuFd.append('brand_id', String(pData.brand_id))
+    if (pData.description) skuFd.append('description', pData.description)
+
+    existing.forEach((s, i) => {
+      skuFd.append(`skus[${i}][sku_code]`, s.sku_code)
+      skuFd.append(`skus[${i}][price]`, String(s.price))
+      skuFd.append(`skus[${i}][quantity]`, String(s.quantity))
+      skuFd.append(`skus[${i}][status]`, s.status)
+    })
+
+    const authStore = useAuthStore()
+    const updateRes = await fetch(`${API()}/admin/products/${productId}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: authStore.token ? `Bearer ${authStore.token}` : '' },
+      body: skuFd,
+    })
+
+    if (updateRes.ok) {
+      const updated = await updateRes.json()
+      skus.value = (updated.skus ?? []).map((s: SkuRow) => ({ ...s, combination: '' }))
     }
   }
 
   async function deleteSku(skuCode: string) {
-    await variantApi.deleteSku(skuCode)
     skus.value = skus.value.filter(s => s.sku_code !== skuCode)
+    // Không có endpoint riêng — sẽ sync khi save tiếp theo
+    // Hoặc dùng product update với danh sách SKU mới
   }
 
-  // ── Combination Options ───────────────────────────────────────────────
-  async function saveCombinationOption(skuCode: string, optionsId: number) {
-    // POST body: { options_id, sku_code }
-    const res = await variantApi.createCombinationOption({ options_id: optionsId, sku_code: skuCode })
-    combinations.value.push(res.data.data ?? res.data)
+  // ── Combinations ──────────────────────────────────────────────────────────
+
+  async function fetchCombinations(productId: number) {
+    combinations.value = await req<ProductCombination[]>('GET', `products/${productId}/combinations`)
   }
 
-  async function deleteCombinationOption(id: number) {
-    await variantApi.deleteCombinationOption(id)
+  async function createCombination(optionsId: number, skuCode: string): Promise<ProductCombination> {
+    const created = await req<ProductCombination>('POST', 'combinations', {
+      options_id: optionsId,
+      sku_code: skuCode,
+    })
+    combinations.value.push(created)
+    return created
+  }
+
+  async function deleteCombination(id: number) {
+    await req('DELETE', `combinations/${id}`)
     combinations.value = combinations.value.filter(c => c.id !== id)
   }
 
-  function reset() {
-    variants.value = []; skus.value = []; combinations.value = []
-  }
-
   return {
-    variants, skus, combinations, loading, error,
-    fetchVariants, createVariant, updateVariant, deleteVariant,
-    createOption, deleteOption,
-    fetchSkus, saveSku, deleteSku,
-    saveCombinationOption, deleteCombinationOption,
-    reset,
+    variants,
+    skus,
+    combinations,
+    loading,
+    fetchVariants,
+    createVariant,
+    updateVariant,
+    deleteVariant,
+    createOption,
+    deleteOption,
+    fetchSkus,
+    saveSku,
+    deleteSku,
+    fetchCombinations,
+    createCombination,
+    deleteCombination,
   }
 })

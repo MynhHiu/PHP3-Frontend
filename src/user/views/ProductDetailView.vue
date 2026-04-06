@@ -32,10 +32,10 @@
         <!-- Main Image -->
         <div class="pd-main-img-wrap">
           <div class="pd-badges">
-            <span v-if="selectedSku && originalPrice > selectedSku.price" class="pd-badge-sale">
+            <!-- <span v-if="selectedSku && originalPrice > selectedSku.price" class="pd-badge-sale">
               -{{ discountPercent }}%
             </span>
-            <span class="pd-badge-new">MỚI</span>
+            <span class="pd-badge-new">MỚI</span> -->
           </div>
           <img
             :src="activeImage || product.image_url || PLACEHOLDER"
@@ -43,7 +43,7 @@
             class="pd-main-img"
             @error="(e) => ((e.target as HTMLImageElement).src = PLACEHOLDER)"
           />
-          <div class="pd-zoom-hint">🔍 Hover để xem</div>
+          <div class="pd-zoom-hint">Hover để xem</div>
         </div>
 
         <!-- Thumbnail strip -->
@@ -103,14 +103,17 @@
 
         <!-- Price -->
         <div class="pd-price-box">
-          <div class="pd-price-main">
-            {{ fmt(selectedSku?.price ?? product.price ?? 0) }}<span class="pd-currency">đ</span>
-          </div>
-          <div v-if="originalPrice > (selectedSku?.price ?? product.price ?? 0)" class="pd-price-old-row">
-            <span class="pd-price-old">{{ fmt(originalPrice) }}đ</span>
-            <span class="pd-discount-badge">Tiết kiệm {{ fmt(originalPrice - (selectedSku?.price ?? product.price ?? 0)) }}đ</span>
-          </div>
+        <div class="pd-price-main">
+          {{ fmt(Math.floor(selectedSku?.price ?? product.price ?? 0)) }}<span class="pd-currency">đ</span>
         </div>
+        
+        <!-- <div v-if="originalPrice > (selectedSku?.price ?? product.price ?? 0)" class="pd-price-old-row">
+          <span class="pd-price-old">{{ fmt(Math.floor(originalPrice)) }}đ</span>
+          <span class="pd-discount-badge">
+            Tiết kiệm {{ fmt(Math.floor(originalPrice - (selectedSku?.price ?? product.price ?? 0))) }}đ
+          </span>
+        </div> -->
+      </div>
 
         <!-- SKU / Variants -->
         <div v-if="product.skus && product.skus.length > 0" class="pd-sku-section">
@@ -1030,6 +1033,5 @@ watch(allImages, (imgs) => {
   .pd-title { font-size: 18px; }
   .pd-price-main { font-size: 28px; }
   .pd-actions { flex-direction: column; }
-  .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

@@ -253,10 +253,10 @@
             <div class="pg-info">
               <div class="pg-brand">{{ p.brand?.name || 'Green Electric' }}</div>
               <div class="pg-name">{{ p.name }}</div>
-              <div class="pg-stars">
+              <!-- <div class="pg-stars">
                 <span v-for="s in 5" :key="s" :class="['star', s <= (p.rating || 4) ? 'filled' : '']">★</span>
                 <span class="pg-review-count">({{ p.reviewCount || Math.floor(Math.random()*80+10) }})</span>
-              </div>
+              </div> -->
               <div class="pg-price-row">
                 <span class="pg-price-new">{{ fmt(p.price || 0) }}đ</span>
                 <span v-if="p.old_price" class="pg-price-old">{{ fmt(p.old_price) }}đ</span>

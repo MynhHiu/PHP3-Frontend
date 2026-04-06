@@ -180,8 +180,8 @@ const order = computed(() => {
   const o = orderStore.current
   if (!o) return null
 
-  const subtotal = (o.order_details ?? []).reduce(
-    (s, d) => s + (d.product?.price ?? 0) * d.quantity, 0
+  const subtotal = (o.items ?? o.order_details ?? []).reduce(
+    (s: number, d: any) => s + (d.price ?? d.product?.price ?? 0) * d.quantity, 0
   )
   const shippingFee = subtotal >= 5_000_000 ? 0 : 30_000
 
@@ -209,11 +209,11 @@ const order = computed(() => {
       address: o.address,
       note:    '',
     },
-    products: (o.order_details ?? []).map(d => ({
-      name:    d.product?.name  || d.product_sku_code,
+    products: (o.items ?? o.order_details ?? []).map((d: any) => ({
+      name:    d.product_name || d.product?.name  || d.product_sku_code,
       variant: '',
-      image:   d.product?.image_url || 'https://placehold.co/80x80/e8f5e9/2e7d32?text=SP',
-      price:   d.product?.price ?? 0,
+      image:   d.product_image || d.product?.image_url || 'https://placehold.co/80x80/e8f5e9/2e7d32?text=SP',
+      price:   d.price ?? d.product?.price ?? 0,
       qty:     d.quantity,
     })),
   }

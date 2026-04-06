@@ -3,31 +3,28 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/api/index'
 
-export interface OrderDetail {
+export interface OrderItem {
   id: number
   product_sku_code: string
-  orders_id: number
   quantity: number
-  product_sku?: {
-    product?: {
-      name: string
-      image_url?: string
-      price?: number
-    }
-  }
+  price: number | null
+  product_name: string | null
+  product_image: string | null
 }
 
 export interface Order {
   id: number
-  user_id: number
+  user_id?: number
   email: string
-  phone: number
+  phone: string | number
   address: string
   total: number
   payment: string
   status: string
   created_at: string
-  order_details: OrderDetail[]
+  items: OrderItem[]
+  // backward compat
+  order_details?: any[]
 }
 
 export interface CheckoutPayload {
@@ -41,6 +38,7 @@ export interface CheckoutPayload {
 
 export const useOrderStore = defineStore('order', () => {
   const orders  = ref<Order[]>([])
+  const current = ref<Order | null>(null)
   const loading = ref(false)
   const error   = ref<string | null>(null)
 
@@ -49,8 +47,8 @@ export const useOrderStore = defineStore('order', () => {
     loading.value = true
     error.value   = null
     try {
-      const res    = await api.get('/orders')
-      orders.value = res.data.data
+      const res    = await api.get('/user/orders')
+      orders.value = res.data.data ?? res.data
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Không thể tải đơn hàng.'
     } finally {
@@ -61,8 +59,9 @@ export const useOrderStore = defineStore('order', () => {
   // ── Lấy chi tiết 1 đơn hàng ─────────────────────────────────────────────
   async function fetchOrder(id: number): Promise<Order | null> {
     try {
-      const res = await api.get(`/orders/${id}`)
-      return res.data.data
+      const res = await api.get(`/user/orders/${id}`)
+      current.value = res.data
+      return res.data
     } catch {
       return null
     }
@@ -71,7 +70,7 @@ export const useOrderStore = defineStore('order', () => {
   // ── Huỷ đơn hàng ────────────────────────────────────────────────────────
   async function cancelOrder(id: number) {
     try {
-      await api.patch(`/orders/${id}/cancel`)
+      await api.patch(`/user/orders/${id}/cancel`)
       const order = orders.value.find(o => o.id === id)
       if (order) order.status = 'cancelled'
     } catch (err: any) {
@@ -80,12 +79,12 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   async function checkout(payload: CheckoutPayload): Promise<Order> {
-    const res = await api.post('/checkout', payload)
-    return res.data.data
+    const res = await api.post('/user/orders', payload)
+    return res.data.order
   }
 
   return {
-    orders, loading, error,
+    orders, current, loading, error,
     fetchOrders, fetchOrder, cancelOrder, checkout,
   }
 })

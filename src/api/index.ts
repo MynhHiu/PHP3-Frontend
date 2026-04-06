@@ -136,17 +136,17 @@ export const orderApi = {
   updateStatus: (id: number, status: string) =>
     api.patch(`/admin/orders/${id}/status`, { status }),
 }
-
+ 
 // ── Orders (User) ─────────────────────────────────────────────────────────────
 export const userOrderApi = {
-  // GET /api/orders — danh sách đơn hàng của user đang đăng nhập
-  getAll: () => api.get('/orders'),
-
-  // GET /api/orders/{id} — chi tiết 1 đơn hàng
-  getOne: (id: number) => api.get(`/orders/${id}`),
-
-  // PATCH /api/orders/{id}/cancel — huỷ đơn (chỉ khi status = pending)
-  cancel: (id: number) => api.patch(`/orders/${id}/cancel`),
+  // GET /api/user/orders — danh sách đơn hàng của user đang đăng nhập
+  getAll: () => api.get('/user/orders'),
+ 
+  // GET /api/user/orders/{id} — chi tiết 1 đơn hàng
+  getOne: (id: number) => api.get(`/user/orders/${id}`),
+ 
+  // PATCH /api/user/orders/{id}/cancel — huỷ đơn (chỉ khi status = pending)
+  cancel: (id: number) => api.patch(`/user/orders/${id}/cancel`),
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────

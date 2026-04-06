@@ -16,6 +16,7 @@
       <h2>Đặt hàng thành công!</h2>
       <p>Mã đơn hàng: <strong>#{{ successOrderId }}</strong></p>
       <p class="success-sub">Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ xác nhận sớm nhất!</p>
+      <p class="email-notice">📧 Email xác nhận đã được gửi tới <strong>{{ form.email }}</strong></p>
       <div class="success-actions">
         <router-link to="/order-history" class="btn-orders">Xem đơn hàng</router-link>
         <router-link to="/" class="btn-home">Về trang chủ</router-link>
@@ -102,7 +103,7 @@
         <div v-else>
           <div class="order-items">
             <div v-for="item in checkoutItems" :key="item.id" class="order-item">
-              <img :src="item.product?.image_url || 'https://placehold.co/60x60/e8f5e9/2e7d32?text=SP'"
+              <img :src="item.image_url || 'https://placehold.co/...'"
                 class="item-img"
                 @error="(e) => ((e.target as HTMLImageElement).src = 'https://placehold.co/60x60/e8f5e9/2e7d32?text=SP')" />
               <div class="item-info">
@@ -111,7 +112,7 @@
               </div>
               <div class="item-right">
                 <span class="item-qty">x{{ item.quantity }}</span>
-                <span class="item-price">{{ fmt((item.product?.price ?? 0) * item.quantity) }}đ</span>
+                <span class="item-price">{{ fmt((item.price ?? 0) * item.quantity) }}đ</span>
               </div>
             </div>
 
@@ -171,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCartStore } from '@/user/stores/cartStore'
 import { useAuthStore } from '@/user/stores/authStore'
@@ -211,8 +212,8 @@ const checkoutItems = computed(() =>
 )
 
 /* ── Tính tiền ───────────────────────────────────────────────── */
-const subtotal    = computed(() =>
-  checkoutItems.value.reduce((s: number, i: any) => s + (i.product?.price ?? 0) * i.quantity, 0)
+const subtotal = computed(() =>
+  checkoutItems.value.reduce((s: number, i: any) => s + (i['price'] ?? 0) * i.quantity, 0)
 )
 const shippingFee = computed(() => subtotal.value >= 5_000_000 ? 0 : 30_000)
 const total       = computed(() => subtotal.value - discount.value + shippingFee.value)
@@ -226,6 +227,15 @@ const form = ref({
   note:     '',
   payment:  'cod',
 })
+
+// Tự động điền khi user data load xong (ví dụ sau refresh trang)
+watch(() => authStore.user, (u) => {
+  if (!u) return
+  if (!form.value.fullname) form.value.fullname = u.fullname || ''
+  if (!form.value.email)    form.value.email    = u.email    || ''
+  if (!form.value.phone)    form.value.phone    = u.phone    || ''
+  if (!form.value.address)  form.value.address  = u.address  || ''
+}, { immediate: true })
 
 const paymentOptions = [
   { value: 'cod',     icon: '💵', name: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền mặt khi nhận được hàng' },
@@ -328,7 +338,14 @@ async function placeOrder() {
   }
 }
 
-onMounted(() => cartStore.fetchCart())
+onMounted(async () => {
+  // Load giỏ hàng
+  await cartStore.fetchCart()
+  // Nếu đã đăng nhập, lấy thông tin mới nhất từ server để điền form
+  if (authStore.isLoggedIn) {
+    await authStore.fetchMe()
+  }
+})
 </script>
 
 <style scoped>
@@ -344,7 +361,8 @@ onMounted(() => cartStore.fetchCart())
 .success-icon { font-size: 72px; margin-bottom: 16px; }
 .success-box h2 { font-size: 24px; font-weight: 700; color: #1b5e20; margin-bottom: 8px; }
 .success-box p { font-size: 15px; color: #444; margin-bottom: 4px; }
-.success-sub { color: #888; font-size: 13px; margin-bottom: 24px !important; }
+.success-sub { color: #888; font-size: 13px; margin-bottom: 8px !important; }
+.email-notice { color: #2e7d32; font-size: 13px; background: #e8f5e9; border-radius: 6px; padding: 8px 14px; margin-bottom: 20px !important; }
 .success-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .btn-orders { padding: 12px 24px; background: #2e7d32; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; }
 .btn-home   { padding: 12px 24px; background: #fff; color: #2e7d32; border: 1.5px solid #2e7d32; border-radius: 6px; text-decoration: none; font-weight: 600; }

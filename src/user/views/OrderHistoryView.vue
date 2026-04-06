@@ -145,11 +145,11 @@ const orders = computed(() =>
     total:    o.total,
     payment:  o.payment,
     address:  o.address,
-    products: (o.order_details ?? []).map(d => ({
-      name:  d.product?.name  || d.product_sku_code,
+    products: (o.items ?? o.order_details ?? []).map((d: any) => ({
+      name:  d.product_name || d.product?.name  || d.product_sku_code,
       qty:   d.quantity,
-      price: (d.product?.price ?? 0) * d.quantity,
-      image: d.product?.image_url || `https://placehold.co/60x60/e8f5e9/2e7d32?text=SP`,
+      price: (d.price ?? d.product?.price ?? 0) * d.quantity,
+      image: d.product_image || d.product?.image_url || `https://placehold.co/60x60/e8f5e9/2e7d32?text=SP`,
     })),
   }))
 )

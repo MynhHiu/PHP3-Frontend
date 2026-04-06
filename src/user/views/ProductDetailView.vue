@@ -104,7 +104,7 @@
         <!-- Price -->
         <div class="pd-price-box">
         <div class="pd-price-main">
-          {{ fmt(Math.floor(selectedSku?.price ?? product.price ?? 0)) }}<span class="pd-currency">đ</span>
+          {{ fmt(Math.floor(Number(selectedSku?.price ?? product.price ?? 0))) }}<span class="pd-currency">đ</span>
         </div>
         
         <!-- <div v-if="originalPrice > (selectedSku?.price ?? product.price ?? 0)" class="pd-price-old-row">
@@ -127,7 +127,7 @@
               :disabled="sku.quantity === 0"
             >
               <span class="pd-sku-code">{{ sku.sku_code }}</span>
-              <span class="pd-sku-price">{{ fmt(sku.price) }}đ</span>
+              <span class="pd-sku-price">{{ fmt(Number(sku.price)) }}đ</span>
               <span v-if="sku.quantity === 0" class="pd-sku-oos">Hết hàng</span>
             </button>
           </div>
@@ -392,11 +392,11 @@ const maxQty      = computed(() => selectedSku.value?.quantity ?? product.value?
 const addingToCart = ref(false)
 
 const originalPrice = computed(() => {
-  const cur = selectedSku.value?.price ?? product.value?.price ?? 0
+  const cur = Number(selectedSku.value?.price ?? product.value?.price ?? 0)
   return Math.round(cur * 1.2)
 })
 const discountPercent = computed(() => {
-  const cur = selectedSku.value?.price ?? product.value?.price ?? 0
+  const cur = Number(selectedSku.value?.price ?? product.value?.price ?? 0)
   const ori = originalPrice.value
   if (!ori || !cur) return 0
   return Math.round(((ori - cur) / ori) * 100)
@@ -484,7 +484,7 @@ async function handleAddToCart() {
     await cartStore.addToCart(skuCode, qty.value, {
       name:      product.value!.name,
       image_url: product.value!.image_url,
-      price:     selectedSku.value?.price ?? product.value?.price ?? 0,
+      price:     Number(selectedSku.value?.price ?? product.value?.price ?? 0),
     })
     showToast(`Đã thêm "${product.value!.name}" vào giỏ hàng!`, 'success')
   } catch {

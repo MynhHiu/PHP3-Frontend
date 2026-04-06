@@ -34,12 +34,12 @@
             <input type="checkbox" v-model="selectedIds" :value="item.id" />
           </label>
           <div class="item-image">
-            <img :src="item.product?.image_url || 'https://placehold.co/90x90/e8f5e9/2e7d32?text=SP'" :alt="item.product?.name" />
+            <img :src="item.image_url || item.product?.image_url || 'https://placehold.co/90x90/e8f5e9/2e7d32?text=SP'" :alt="item.product?.name" />
           </div>
           <div class="item-info">
-            <p class="item-name">{{ item.product?.name || item.product_sku_code }}</p>
+            <p class="item-name">{{ item.product_name || item.product?.name || item.product_sku_code }}</p>
             <p class="item-sku">SKU: {{ item.product_sku_code }}</p>
-            <p class="item-price">{{ formatPrice(item.product?.price ?? 0) }}đ</p>
+            <p class="item-price">{{ formatPrice(Number(item.price ?? item.product?.price ?? 0)) }}đ</p>
           </div>
           <div class="item-qty">
             <button class="qty-btn" :disabled="item.quantity <= 1 || cartStore.loading"
@@ -49,7 +49,7 @@
             <button class="qty-btn" :disabled="cartStore.loading"
               @click="cartStore.updateQuantity(item.id, item.quantity + 1)">+</button>
           </div>
-          <div class="item-total">{{ formatPrice((item.product?.price ?? 0) * item.quantity) }}đ</div>
+          <div class="item-total">{{ formatPrice(Number(item.price ?? item.product?.price ?? 0) * item.quantity) }}đ</div>
           <button class="btn-remove" @click="cartStore.removeItem(item.id)">✕</button>
         </div>
       </div>
@@ -101,9 +101,8 @@ const selectedIds = ref<number[]>([])
 const couponCode  = ref('')
 const discount    = ref(0)
 
-onMounted(() => {
-  cartStore.fetchCart()
-  // Tự chọn tất cả khi vào trang
+onMounted(async () => {
+  await cartStore.fetchCart()
   selectedIds.value = cartStore.items.map(i => i.id)
 })
 
@@ -116,7 +115,7 @@ const toggleAll = () => {
 const selectedSubtotal = computed(() =>
   cartStore.items
     .filter(i => selectedIds.value.includes(i.id))
-    .reduce((sum, i) => sum + (i.product?.price ?? 0) * i.quantity, 0)
+    .reduce((sum, i) => sum + Number(i.product?.price ?? 0) * i.quantity, 0)
 )
 const shippingFee = computed(() => selectedSubtotal.value >= 5_000_000 ? 0 : 30_000)
 const total       = computed(() => selectedSubtotal.value - discount.value + shippingFee.value)

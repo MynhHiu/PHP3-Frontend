@@ -17,12 +17,43 @@
             </div>
           </router-link>
 
-          <div class="u-search">
-            <input class="u-search-input" type="text" v-model="searchQuery" placeholder="Tìm sản phẩm..."
-              @keyup.enter="goSearch" />
+          <div class="u-search" ref="searchWrap">
+            <input
+              class="u-search-input"
+              type="text"
+              v-model="searchQuery"
+              placeholder="Tìm sản phẩm..."
+              @keyup.enter="goSearch"
+              @input="onSearchInput"
+              @focus="showSuggestions = suggestions.length > 0"
+              autocomplete="off"
+            />
             <button class="u-search-btn" @click="goSearch">
               <IconSearch />
             </button>
+
+            <!-- Suggestions dropdown -->
+            <div v-if="showSuggestions && suggestions.length" class="u-suggestions">
+              <div
+                v-for="s in suggestions"
+                :key="s.id"
+                class="u-suggestion-item"
+                @mousedown.prevent="pickSuggestion(s)"
+              >
+                <img
+                  :src="s.image_url || ''"
+                  class="u-sug-img"
+                  @error="(e) => (e.target as HTMLImageElement).style.display='none'"
+                />
+                <div class="u-sug-info">
+                  <span class="u-sug-name">{{ s.name }}</span>
+                  <span class="u-sug-price">{{ fmt(s.price || 0) }}đ</span>
+                </div>
+              </div>
+              <div class="u-sug-footer" @mousedown.prevent="goSearch">
+                Xem tất cả kết quả cho "<strong>{{ searchQuery }}</strong>"
+              </div>
+            </div>
           </div>
 
           <div class="u-header-actions">
@@ -138,11 +169,15 @@
       </div>
     </footer>
 
+    <!-- ── AI CHAT BOT ──────────────────────────────────────── -->
+    <AiChatBox />
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted } from 'vue'
+import { ref, h, onMounted, onUnmounted } from 'vue'
+import AiChatBox from '@/user/components/AiChatBox.vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/user/stores/authStore'
 import { useCartStore } from '@/user/stores/cartStore'
@@ -150,26 +185,72 @@ import logoImage from '@/assets/image/image-removebg-preview.png'
 
 onMounted(() => {
   authStore.init()
+  document.addEventListener('click', onClickOutside)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+  clearTimeout(debounceTimer)
 })
 
 async function handleLogout() {
   await authStore.logout()
-  // Giữ nguyên trang hiện tại sau khi đăng xuất (không chuyển về /login)
-  // Nếu muốn đổi hướng, dùng router.push('/login') ở đây.
 }
 
-const IconLogout = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4' }), h('polyline', { points: '16 17 21 12 16 7' }), h('line', { x1: '21', y1: '12', x2: '9', y2: '12' })]) }
-
-const router = useRouter()
+const router    = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 
-const searchQuery = ref('')
-const goSearch = () => {
+/* ── Search + Autocomplete ───────────────────────────────────────── */
+const searchQuery    = ref('')
+const suggestions    = ref<any[]>([])
+const showSuggestions = ref(false)
+const searchWrap     = ref<HTMLElement | null>(null)
+let debounceTimer: ReturnType<typeof setTimeout>
+
+const fmt = (n: number) => n.toLocaleString('vi-VN')
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+
+function onSearchInput() {
+  clearTimeout(debounceTimer)
   const q = searchQuery.value.trim()
-  if (q) router.push({ path: '/products', query: { search: q } })
+  if (q.length < 2) {
+    suggestions.value    = []
+    showSuggestions.value = false
+    return
+  }
+  debounceTimer = setTimeout(async () => {
+    try {
+      const res  = await fetch(`${BASE}/products?search=${encodeURIComponent(q)}&per_page=6`)
+      const data = await res.json()
+      suggestions.value    = Array.isArray(data) ? data.slice(0, 6) : []
+      showSuggestions.value = suggestions.value.length > 0
+    } catch {
+      suggestions.value    = []
+      showSuggestions.value = false
+    }
+  }, 280)
 }
 
+function goSearch() {
+  const q = searchQuery.value.trim()
+  showSuggestions.value = false
+  if (q) router.push({ path: '/', query: { search: q } })
+}
+
+function pickSuggestion(s: any) {
+  searchQuery.value    = ''
+  showSuggestions.value = false
+  suggestions.value    = []
+  router.push(`/products/${s.id}`)
+}
+
+function onClickOutside(e: MouseEvent) {
+  if (searchWrap.value && !searchWrap.value.contains(e.target as Node)) {
+    showSuggestions.value = false
+  }
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────── */
 const navItems = [
   { label: 'Trang chủ', to: '/' },
   { label: 'Sản phẩm', to: '/products' },
@@ -180,8 +261,81 @@ const navItems = [
 ]
 
 // Inline SVG Icons
-const IconMapPin = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:12px;height:12px;display:inline;vertical-align:middle' }, [h('path', { d: 'M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z' }), h('circle', { cx: '12', cy: '10', r: '3' })]) }
+const IconLogout = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4' }), h('polyline', { points: '16 17 21 12 16 7' }), h('line', { x1: '21', y1: '12', x2: '9', y2: '12' })]) }
 const IconSearch = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', 'stroke-width': '2.5', style: 'width:18px;height:18px' }, [h('circle', { cx: '11', cy: '11', r: '8' }), h('line', { x1: '21', y1: '21', x2: '16.65', y2: '16.65' })]) }
-const IconUser = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2' }), h('circle', { cx: '12', cy: '7', r: '4' })]) }
-const IconCart = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('circle', { cx: '9', cy: '21', r: '1' }), h('circle', { cx: '20', cy: '21', r: '1' }), h('path', { d: 'M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' })]) }
+const IconUser   = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('path', { d: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2' }), h('circle', { cx: '12', cy: '7', r: '4' })]) }
+const IconCart   = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:22px;height:22px' }, [h('circle', { cx: '9', cy: '21', r: '1' }), h('circle', { cx: '20', cy: '21', r: '1' }), h('path', { d: 'M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' })]) }
+const IconMapPin = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', style: 'width:12px;height:12px;display:inline;vertical-align:middle' }, [h('path', { d: 'M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z' }), h('circle', { cx: '12', cy: '10', r: '3' })]) }
 </script>
+
+<style scoped>
+/* Suggestions dropdown */
+.u-search { position: relative; }
+
+.u-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  background: #fff;
+  border: 1px solid #e0e8e3;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.u-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background .15s;
+  border-bottom: 1px solid #f3f3f3;
+}
+.u-suggestion-item:last-child { border-bottom: none; }
+.u-suggestion-item:hover { background: #f0faf4; }
+
+.u-sug-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f8faf9;
+  flex-shrink: 0;
+  border: 1px solid #eee;
+}
+
+.u-sug-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.u-sug-name {
+  font-size: 13px;
+  color: #222;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.u-sug-price {
+  font-size: 12px;
+  color: #e03131;
+  font-weight: 700;
+}
+
+.u-sug-footer {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #2d8c4e;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f8fdf9;
+  text-align: center;
+  transition: background .15s;
+}
+.u-sug-footer:hover { background: #eaf7ef; }
+.u-sug-footer strong { color: #1a5c2e; }
+</style>

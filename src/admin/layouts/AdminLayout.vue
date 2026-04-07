@@ -79,12 +79,12 @@
             - Tạo biến thể mới và gán ngay vào sản phẩm đó
             - Tạo SKU (product_skus) và gán combination_options
         -->
-        <router-link to="/admin/variants/assign" custom v-slot="{ isActive, navigate }">
+        <!-- <router-link to="/admin/variants/assign" custom v-slot="{ isActive, navigate }">
           <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']" :title="!open ? 'Gán biến thể' : ''">
             <IconVariantAssign class="nav-icon" />
             <span v-if="open">Gán biến thể</span>
           </div>
-        </router-link>
+        </router-link> -->
  
         <!--
           TRANG PHỤ: Danh sách biến thể (truy cập từ sidebar phụ)

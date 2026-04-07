@@ -29,6 +29,8 @@ const LoginView = () => import('@/user/views/LoginView.vue')
 const RegisterView = () => import('@/user/views/RegisterView.vue')
 const GoogleCallback   = () => import('@/user/views/GoogleCallback.vue')
 
+const VariantManager = () => import('@/admin/views/VariantManager.vue')
+
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior() {
@@ -61,6 +63,7 @@ const router = createRouter({
         { path: 'variants/create', component: VariantCreate, name: 'variant-create' },
         { path: 'variants/:id/edit', component: VariantCreate, name: 'variant-edit' },
         { path: 'variants/assign', component: VariantAssign, name: 'variant-assign' },
+        { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager' },
       ],
     },
 

@@ -122,71 +122,45 @@ export const useVariantStore = defineStore('variant', () => {
   // ── SKUs ──────────────────────────────────────────────────────────────────
 
   async function fetchSkus(productId: number) {
-    const res = await fetch(`${API()}/admin/products/${productId}`, { headers: headers() })
-    if (!res.ok) return
-    const data = await res.json()
-    skus.value = (data.skus ?? []).map((s: SkuRow) => ({ ...s, combination: '' }))
+    loading.value = true
+    try {
+      const res = await fetch(`${API()}/admin/products/${productId}/skus`, {
+        headers: headers()
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      skus.value = (Array.isArray(data) ? data : data.data ?? [])
+        .map((s: SkuRow) => ({ ...s, combination: '' }))
+    } finally {
+      loading.value = false
+    }
   }
 
   async function saveSku(productId: number, sku: Partial<SkuRow>) {
-    // Kiểm tra đã tồn tại chưa (updateOrCreate qua backend)
-    const fd = new FormData()
-    fd.append('_method', 'PUT')
-    fd.append('name', '')             // placeholder, backend sẽ giữ nguyên
-    // Dùng endpoint riêng của SKU nếu có, hoặc dùng product update
-    // Hiện tại dùng product update với skus array
-    const existing = skus.value.map(s => ({
-      sku_code: s.sku_code,
-      price: s.sku_code === sku.sku_code ? sku.price! : s.price,
-      quantity: s.sku_code === sku.sku_code ? sku.quantity! : s.quantity,
-      status: s.sku_code === sku.sku_code ? sku.status! : s.status,
-    }))
+    const isNew = !skus.value.find(s => s.sku_code === sku.sku_code)
 
-    // Nếu là SKU mới thì thêm vào
-    if (!skus.value.find(s => s.sku_code === sku.sku_code)) {
-      existing.push({
-        sku_code: sku.sku_code!,
-        price: sku.price!,
-        quantity: sku.quantity!,
-        status: sku.status!,
+    if (isNew) {
+      const created = await req<SkuRow>('POST', `products/${productId}/skus`, {
+        sku_code: sku.sku_code,
+        price: sku.price,
+        quantity: sku.quantity,
+        status: sku.status,
       })
-    }
-
-    const skuFd = new FormData()
-    skuFd.append('_method', 'PUT')
-
-    // Lấy thông tin product hiện tại để giữ nguyên các field
-    const pRes = await fetch(`${API()}/admin/products/${productId}`, { headers: { Authorization: headers().Authorization ?? "", Accept: 'application/json' } })
-    const pData = await pRes.json()
-    skuFd.append('name', pData.name)
-    skuFd.append('categories_id', String(pData.categories_id))
-    if (pData.brand_id) skuFd.append('brand_id', String(pData.brand_id))
-    if (pData.description) skuFd.append('description', pData.description)
-
-    existing.forEach((s, i) => {
-      skuFd.append(`skus[${i}][sku_code]`, s.sku_code)
-      skuFd.append(`skus[${i}][price]`, String(s.price))
-      skuFd.append(`skus[${i}][quantity]`, String(s.quantity))
-      skuFd.append(`skus[${i}][status]`, s.status)
-    })
-
-    const authStore = useAuthStore()
-    const updateRes = await fetch(`${API()}/admin/products/${productId}`, {
-      method: 'POST',
-      headers: { Accept: 'application/json', Authorization: authStore.token ? `Bearer ${authStore.token}` : '' },
-      body: skuFd,
-    })
-
-    if (updateRes.ok) {
-      const updated = await updateRes.json()
-      skus.value = (updated.skus ?? []).map((s: SkuRow) => ({ ...s, combination: '' }))
+      skus.value.push({ ...created, combination: '' })
+    } else {
+      const updated = await req<SkuRow>('PUT', `skus/${sku.sku_code}`, {
+        price: sku.price,
+        quantity: sku.quantity,
+        status: sku.status,
+      })
+      const idx = skus.value.findIndex(s => s.sku_code === sku.sku_code)
+      if (idx !== -1) skus.value[idx] = { ...updated, combination: '' }
     }
   }
 
   async function deleteSku(skuCode: string) {
+    await req('DELETE', `skus/${skuCode}`)
     skus.value = skus.value.filter(s => s.sku_code !== skuCode)
-    // Không có endpoint riêng — sẽ sync khi save tiếp theo
-    // Hoặc dùng product update với danh sách SKU mới
   }
 
   // ── Combinations ──────────────────────────────────────────────────────────

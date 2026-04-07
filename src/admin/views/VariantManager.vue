@@ -168,14 +168,14 @@
 
       <!-- ── RIGHT: SKU ────────────────────────────────────────────────────── -->
       <div class="form-col">
-        <div class="section-card">
-          <h3>
+        <!-- <div class="section-card"> -->
+          <!-- <h3>
             SKU sản phẩm
             <span class="sub">(Mã & Giá từng biến thể)</span>
-          </h3>
+          </h3> -->
 
           <!-- Form thêm/sửa SKU -->
-          <div class="sku-add-form">
+          <!-- <div class="sku-add-form">
             <div class="form-row-2">
               <div class="field">
                 <label class="label">Mã SKU <span class="req">*</span></label>
@@ -251,10 +251,10 @@
                 {{ editingSkuCode ? "Cập nhật SKU" : "+ Thêm SKU" }}
               </button>
             </div>
-          </div>
+          </div> -->
 
           <!-- Bảng SKU hiện có -->
-          <div v-if="store.skus.length === 0" class="empty-table" style="padding: 20px">
+          <!-- <div v-if="store.skus.length === 0" class="empty-table" style="padding: 20px">
             <p style="font-size: 13px; color: var(--gray-400)">
               Chưa có SKU nào. Thêm SKU để quản lý giá và tồn kho.
             </p>
@@ -356,8 +356,8 @@
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
+          </div> -->
+        <!-- </div> -->
 
         <!-- Gán biến thể vào SKU -->
         <div
@@ -365,38 +365,57 @@
           class="section-card"
         >
           <h3>Gán biến thể vào SKU</h3>
-          <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 12px">
-            Chọn SKU và tick vào các giá trị biến thể tương ứng.
+          <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px">
+            Với mỗi SKU, chọn <strong>1 giá trị</strong> cho từng loại biến thể để tạo tổ hợp.
           </p>
 
-          <div class="field" style="margin-bottom: 12px">
-            <label class="label">Chọn SKU</label>
-            <select v-model="assignSkuCode" class="input">
-              <option value="">-- Chọn SKU --</option>
-              <option v-for="s in store.skus" :key="s.sku_code" :value="s.sku_code">
-                {{ s.sku_code }} ({{ fmt(s.price) }})
-              </option>
-            </select>
-          </div>
+          <!-- Danh sách SKU dạng card, mỗi card cho phép chọn biến thể -->
+          <div class="sku-assign-list">
+            <div
+              v-for="s in store.skus"
+              :key="s.sku_code"
+              class="sku-assign-card"
+            >
+              <!-- SKU header -->
+              <div class="sku-assign-header">
+                <div class="sku-assign-info">
+                  <span class="sku-assign-code">{{ s.sku_code }}</span>
+                  <span class="sku-assign-price">{{ fmt(s.price) }}</span>
+                </div>
+                <!-- Hiển thị combination hiện tại -->
+                <div class="sku-combo-tags" v-if="getSkuComboLabel(s.sku_code)">
+                  <span
+                    v-for="tag in getSkuComboLabel(s.sku_code)"
+                    :key="tag"
+                    class="combo-tag"
+                  >{{ tag }}</span>
+                </div>
+                <span v-else class="combo-empty">Chưa gán biến thể</span>
+              </div>
 
-          <div v-if="assignSkuCode">
-            <div v-for="v in store.variants" :key="v.id" class="assign-variant-group">
-              <p class="assign-variant-label">{{ v.variant_name }}</p>
-              <div class="assign-options">
-                <label
-                  v-for="opt in v.options"
-                  :key="opt.id"
-                  class="assign-option-item"
-                  :class="isCombined(opt.id, assignSkuCode) ? 'active' : ''"
+              <!-- Chọn option cho từng variant bằng dropdown -->
+              <div class="sku-assign-body">
+                <div
+                  v-for="v in store.variants"
+                  :key="v.id"
+                  class="assign-variant-row"
                 >
-                  <input
-                    type="checkbox"
-                    :checked="isCombined(opt.id, assignSkuCode)"
-                    @change="toggleCombination(opt.id, assignSkuCode)"
-                    style="display: none"
-                  />
-                  {{ opt.option_values }}
-                </label>
+                  <label class="assign-variant-name">{{ v.variant_name }}</label>
+                  <select
+                    class="assign-option-select"
+                    :value="getSelectedOption(v.id, s.sku_code) || ''"
+                    @change="updateVariantSelection(v, ($event.target as HTMLSelectElement).value, s.sku_code)"
+                  >
+                    <option value="">— Bỏ chọn</option>
+                    <option
+                      v-for="opt in v.options"
+                      :key="opt.id"
+                      :value="opt.id"
+                    >
+                      {{ opt.option_values }}
+                    </option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -496,7 +515,6 @@ const newSku = reactive<{
 });
 
 // Combination assignment
-const assignSkuCode = ref("");
 
 const toast = ref<{ msg: string; type: string } | null>(null);
 const fmt = (v: number) => Number(v).toLocaleString("vi-VN") + "₫";
@@ -644,27 +662,77 @@ function resetSkuForm() {
   Object.assign(newSku, { sku_code: "", price: 0, quantity: 0, status: "active" });
 }
 
-// ── Combination handlers ───────────────────────────────────────────────────────
+// ── Combination handlers (radio-based: 1 option per variant per SKU) ─────────
 
-function isCombined(optionId: number, skuCode: string): boolean {
-  return store.combinations.some(
-    (c) => c.options_id === optionId && c.sku_code === skuCode
-  );
+/** Trả về option_id đang được chọn cho variant này + sku này (hoặc undefined) */
+function getSelectedOption(variantId: number, skuCode: string): number | undefined {
+  const variant = store.variants.find(v => v.id === variantId)
+  if (!variant) return undefined
+  const optionIds = variant.options.map(o => o.id)
+  const combo = store.combinations.find(
+    c => c.sku_code === skuCode && optionIds.includes(c.options_id)
+  )
+  return combo?.options_id
 }
 
-async function toggleCombination(optionId: number, skuCode: string) {
-  const existing = store.combinations.find(
-    (c) => c.options_id === optionId && c.sku_code === skuCode
-  );
-  try {
-    if (existing) {
-      await store.deleteCombination(existing.id);
-    } else {
-      await store.createCombination(optionId, skuCode);
+/** Trả về danh sách nhãn combination của 1 SKU, VD: ["Đỏ", "XL"] */
+function getSkuComboLabel(skuCode: string): string[] {
+  const combos = store.combinations.filter(c => c.sku_code === skuCode)
+  return combos.map(c => {
+    for (const v of store.variants) {
+      const opt = v.options.find(o => o.id === c.options_id)
+      if (opt) return opt.option_values
     }
+    return String(c.options_id)
+  })
+}
+
+/** Chọn 1 option cho variant + sku: xóa option cũ (nếu có) rồi tạo mới */
+async function selectVariantOption(variant: ProductVariant, opt: any, skuCode: string) {
+  // Tìm combination cũ của variant này với sku này
+  const optionIds = variant.options.map(o => o.id)
+  const oldCombo = store.combinations.find(
+    c => c.sku_code === skuCode && optionIds.includes(c.options_id)
+  )
+  try {
+    if (oldCombo) {
+      if (oldCombo.options_id === opt.id) return // Đã chọn rồi, bỏ qua
+      await store.deleteCombination(oldCombo.id)
+    }
+    await store.createCombination(opt.id, skuCode)
+    showToast(`Đã gán ${variant.variant_name}: ${opt.option_values} → ${skuCode}`, 'success')
   } catch (e: any) {
-    showToast(e.userMessage || "Thao tác thất bại", "error");
+    showToast(e.userMessage || 'Thao tác thất bại', 'error')
   }
+}
+
+/** Bỏ chọn toàn bộ option của variant này cho sku */
+async function clearVariantOption(variant: ProductVariant, skuCode: string) {
+  const optionIds = variant.options.map(o => o.id)
+  const oldCombo = store.combinations.find(
+    c => c.sku_code === skuCode && optionIds.includes(c.options_id)
+  )
+  if (!oldCombo) return
+  try {
+    await store.deleteCombination(oldCombo.id)
+    showToast('Đã bỏ gán', 'success')
+  } catch (e: any) {
+    showToast(e.userMessage || 'Thao tác thất bại', 'error')
+  }
+}
+
+async function updateVariantSelection(
+  variant: ProductVariant,
+  selectedValue: string,
+  skuCode: string
+) {
+  if (!selectedValue) {
+    await clearVariantOption(variant, skuCode)
+    return
+  }
+  const opt = variant.options.find(o => String(o.id) === selectedValue)
+  if (!opt) return
+  await selectVariantOption(variant, opt, skuCode)
 }
 
 // ── Mount ─────────────────────────────────────────────────────────────────────
@@ -813,49 +881,118 @@ onMounted(async () => {
   background: #fef9c3;
 }
 
-/* Combination assignment */
-.assign-variant-group {
-  margin-bottom: 12px;
-}
-.assign-variant-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--gray-500);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 6px;
+/* Combination assignment - new card layout */
+.sku-assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.assign-options {
+.sku-assign-card {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sku-assign-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-100);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sku-assign-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sku-assign-code {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  background: #edf3ff;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+.sku-assign-price {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.sku-combo-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
-.assign-option-item {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 14px;
-  border: 1.5px solid var(--gray-200);
-  border-radius: 20px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  background: white;
-  color: var(--gray-600);
-  user-select: none;
-}
-
-.assign-option-item:hover {
-  border-color: var(--brand);
-  color: var(--brand);
-}
-
-.assign-option-item.active {
-  border-color: var(--brand);
-  background: #edf3ff;
-  color: var(--brand);
+.combo-tag {
+  font-size: 11px;
   font-weight: 600;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.combo-empty {
+  font-size: 11px;
+  color: var(--gray-400);
+  font-style: italic;
+}
+
+.sku-assign-body {
+  padding: 12px 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.assign-variant-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.assign-variant-name {
+  font-size: 13px;
+  color: var(--gray-600);
+  font-weight: 600;
+}
+
+.assign-option-select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--gray-200);
+  background: white;
+  color: var(--gray-700);
+  font-size: 13px;
+}
+
+.assign-option-select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.clear-option {
+  border-style: dashed !important;
+  color: var(--gray-400) !important;
+  font-size: 11px !important;
+}
+
+.clear-option.active {
+  background: var(--gray-100) !important;
+  border-color: var(--gray-400) !important;
+  color: var(--gray-600) !important;
 }
 
 .form-footer-right {

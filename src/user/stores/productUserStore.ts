@@ -10,6 +10,25 @@ export interface ProductSku {
   status: string
 }
 
+export interface VariantOption {
+  id: number
+  product_variant_id: number
+  option_values: string
+  combinations: { id: number; options_id: number; sku_code: string }[]
+}
+
+export interface ProductVariant {
+  id: number
+  variant_name: string
+  product_id: number
+  options: VariantOption[]
+}
+
+export interface CombinationMap {
+  option_id: number
+  sku_code: string
+}
+
 export interface ProductDetail {
   id: number
   name: string
@@ -21,6 +40,8 @@ export interface ProductDetail {
   brand?:    { id: number; name: string }
   skus?:     ProductSku[]
   images?:   { id: number; url: string; mota: string }[]
+    variants?: ProductVariant[]
+  combination_map?: CombinationMap[]  
 }
 
 export interface ProductListItem {
@@ -126,4 +147,5 @@ export const useProductUserStore = defineStore('productUser', () => {
     products, flashSale, featured, detail, loading, error, meta,
     fetchProducts, fetchFlashSale, fetchFeatured, fetchDetail, fetchByCategory,
   }
+  
 })

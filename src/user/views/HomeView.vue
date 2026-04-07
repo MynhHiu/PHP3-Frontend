@@ -146,7 +146,7 @@
                 :class="{ active: activeCatId === cat.id }"
                 @click="selectCategory(cat.id)"
               >
-                
+            
                 <span class="ls-cat-name">{{ cat.name }}</span>
                 <span v-if="cat.children && cat.children.length" class="ls-cat-arrow">›</span>
               </a>
@@ -203,8 +203,26 @@
       <!-- RIGHT: PRODUCT CONTENT -->
       <div class="product-content">
 
-        <!-- Breadcrumb + Section title -->
-        
+        <!-- Search result banner -->
+        <div v-if="searchKeyword" class="search-result-bar">
+          <span class="search-result-icon">🔍</span>
+          <span>Kết quả tìm kiếm cho <strong>"{{ searchKeyword }}"</strong>: <em>{{ totalDisplay }} sản phẩm</em></span>
+          <button class="search-clear-btn" @click="clearAllFilters">✕ Xoá tìm kiếm</button>
+        </div>
+
+        <!-- Active filters bar -->
+        <div v-if="activePriceRange || activeBrand" class="active-filters-bar">
+          <span class="af-label">Đang lọc:</span>
+          <span v-if="activePriceRange" class="af-tag">
+            {{ activePriceRange }}
+            <button @click="selectPriceRange(activePriceRange)">✕</button>
+          </span>
+          <span v-if="activeBrand" class="af-tag">
+            {{ brands.find(b => b.id === activeBrand)?.name }}
+            <button @click="selectBrand(activeBrand!)">✕</button>
+          </span>
+          <button class="af-clear-all" @click="clearAllFilters">Xoá tất cả</button>
+        </div>
 
         <!-- Product Grid -->
         <div v-if="loading" class="grid-loading">
@@ -237,7 +255,7 @@
               <div class="pg-overlay">
                 <button
                   class="pg-cart-btn"
-                  @click="$router.push(`/products/${p.id}`)"
+                  @click.stop="handleAddToCart(p)"
                   title="Thêm vào giỏ"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
@@ -301,21 +319,25 @@
         {{ toast.message }}
       </div>
     </transition>
-
+    <div class="home-page">
+    <AiChatBox />
+  </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { resolveProductImage, PLACEHOLDER } from '@/utils/productImage'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/user/stores/cartStore'
 import { useAuthStore } from '@/user/stores/authStore'
 import { useProductUserStore, type ProductListItem } from '@/user/stores/productUserStore'
+import AiChatBox from '@/user/components/AiChatBox.vue'
 
 const cartStore   = useCartStore()
 const authStore   = useAuthStore()
 const router      = useRouter()
+const route       = useRoute()
 const productStore = useProductUserStore()
 
 
@@ -379,6 +401,17 @@ const priceRanges = [
 interface Brand { id: number; name: string }
 const brands = ref<Brand[]>([])
 
+async function fetchBrands() {
+  try {
+    const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+    const res  = await fetch(`${BASE}/brands`)
+    if (!res.ok) throw new Error('fetch failed')
+    brands.value = await res.json()
+  } catch (e) {
+    console.error('Không tải được thương hiệu:', e)
+  }
+}
+
 const sortOptions = [
   { key: 'default', label: 'Mặc định' },
   { key: 'price_asc', label: 'Giá tăng dần' },
@@ -407,21 +440,11 @@ async function fetchCategories() {
   }
 }
 
-async function fetchBrands() {
-  try {
-    const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
-    const res  = await fetch(`${BASE}/brands`)
-    if (!res.ok) throw new Error('fetch failed')
-    brands.value = await res.json()
-  } catch (e) {
-    console.error('Không tải được thương hiệu:', e)
-  }
-}
-
 /* ── State ─────────────────────────────────────────────────────── */
-const activeCatId      = ref<number | null>(null)
+const activeCatId      = ref<number | null>(null)   // null = tất cả
 const activePriceRange = ref('')
 const activeBrand      = ref<number | null>(null)
+const searchKeyword    = ref('')
 const activeSort       = ref('default')
 const currentPage      = ref(1)
 const PAGE_SIZE        = 12
@@ -447,6 +470,16 @@ function selectBrand(id: number) {
   currentPage.value = 1
 }
 
+/** Xoá tất cả bộ lọc */
+function clearAllFilters() {
+  activePriceRange.value = ''
+  activeBrand.value      = null
+  searchKeyword.value    = ''
+  activeCatId.value      = null
+  currentPage.value      = 1
+  productStore.fetchProducts({ per_page: 48 }).catch(() => {})
+}
+
 /* ── Helpers ────────────────────────────────────────────────────── */
 const fmt = (n: number) => n.toLocaleString('vi-VN')
 
@@ -457,13 +490,24 @@ const allProducts = computed<any[]>(() => productStore.products)
 
 const filteredProducts = computed(() => {
   let list = [...allProducts.value]
+
+  // Lọc theo từ khoá tìm kiếm
+  if (searchKeyword.value.trim()) {
+    const kw = searchKeyword.value.trim().toLowerCase()
+    list = list.filter(p => p.name?.toLowerCase().includes(kw))
+  }
+
+  // Lọc theo khoảng giá
   if (activePriceRange.value) {
     const range = priceRanges.find(r => r.label === activePriceRange.value)
     if (range) list = list.filter(p => (p.price || 0) >= range.min && (p.price || 0) <= range.max)
   }
+
+  // Lọc theo thương hiệu
   if (activeBrand.value !== null) {
     list = list.filter(p => p.brand?.id === activeBrand.value)
   }
+
   if (activeSort.value === 'price_asc')  list.sort((a, b) => (a.price || 0) - (b.price || 0))
   if (activeSort.value === 'price_desc') list.sort((a, b) => (b.price || 0) - (a.price || 0))
   if (activeSort.value === 'newest')     list.sort((a, b) => b.id - a.id)
@@ -483,8 +527,29 @@ onMounted(async () => {
   bannerTimer = setInterval(nextBanner, 4500)
   await fetchCategories()
   await fetchBrands()
-  productStore.fetchProducts({ per_page: 48 }).catch(() => {})
+
+  // Đọc ?search= từ URL (khi từ Navbar search sang)
+  const q = route.query.search as string
+  if (q?.trim()) {
+    searchKeyword.value = q.trim()
+    productStore.fetchProducts({ per_page: 200 }).catch(() => {})
+  } else {
+    productStore.fetchProducts({ per_page: 48 }).catch(() => {})
+  }
 })
+
+// Theo dõi nếu URL thay đổi (ví dụ: search lần 2 từ cùng trang)
+watch(() => route.query.search, (newQ) => {
+  const q = (newQ as string)?.trim() ?? ''
+  searchKeyword.value = q
+  currentPage.value   = 1
+  if (q) {
+    productStore.fetchProducts({ per_page: 200 }).catch(() => {})
+  } else {
+    productStore.fetchProducts({ per_page: 48 }).catch(() => {})
+  }
+})
+
 onUnmounted(() => {
   clearInterval(bannerTimer)
   clearTimeout(toastTimer)
@@ -892,11 +957,89 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all .15s;
 }
-.brand-tag:hover { background: #2d8c4e; color: #fff; border-color: #2d8c4e; }
-.brand-tag.active { background: #2d8c4e; color: #fff; border-color: #2d8c4e; box-shadow: 0 2px 8px rgba(45,140,78,.3); }
+.brand-tag:hover  { background: #2d8c4e; color: #fff; border-color: #2d8c4e; }
+.brand-tag.active { background: #2d8c4e; color: #fff; border-color: #2d8c4e; box-shadow: 0 2px 8px rgba(45,140,78,.25); }
 
 /* ─── PRODUCT CONTENT ─── */
 .product-content { min-width: 0; }
+
+/* Search result bar */
+.search-result-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0faf4;
+  border: 1px solid #b5d9c3;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  color: #333;
+  flex-wrap: wrap;
+}
+.search-result-icon { font-size: 16px; flex-shrink: 0; }
+.search-result-bar strong { color: #1a5c2e; }
+.search-result-bar em { color: #2d8c4e; font-style: normal; font-weight: 600; }
+.search-clear-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #c8e6d0;
+  border-radius: 20px;
+  color: #888;
+  font-size: 12px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.search-clear-btn:hover { border-color: #e53e3e; color: #e53e3e; background: #fff5f5; }
+
+/* Active filters bar */
+.active-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.af-label { font-size: 12.5px; color: #888; font-weight: 600; }
+.af-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8f5ee;
+  border: 1px solid #b5d9c3;
+  color: #1a5c2e;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.af-tag button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  font-size: 11px;
+  padding: 0;
+  line-height: 1;
+  transition: color .15s;
+}
+.af-tag button:hover { color: #e53e3e; }
+.af-clear-all {
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  color: #999;
+  font-size: 12px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+  margin-left: auto;
+}
+.af-clear-all:hover { border-color: #e53e3e; color: #e53e3e; }
 
 .content-header { margin-bottom: 12px; }
 .breadcrumb {

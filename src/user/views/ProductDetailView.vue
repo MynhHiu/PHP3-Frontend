@@ -91,7 +91,7 @@
         <h1 class="pd-title">{{ product.name }}</h1>
 
         <!-- Rating -->
-        <div class="pd-rating-row">
+        <!-- <div class="pd-rating-row">
           <div class="pd-stars">
             <span v-for="s in 5" :key="s" :class="['pd-star', s <= rating ? 'filled' : '']">★</span>
           </div>
@@ -99,7 +99,7 @@
           <span class="pd-review-count">({{ reviewCount }} đánh giá)</span>
           <span class="pd-divider">|</span>
           <span class="pd-sold-count">Đã bán: {{ soldCount }}</span>
-        </div>
+        </div> -->
 
         <!-- Price -->
         <div class="pd-price-box">

@@ -206,3 +206,14 @@ export const authApi = {
     email, otp, password, password_confirmation,
   }).then(r => r.data),
 }
+
+// ── Coupons ───────────────────────────────────────────────────────────────────
+export const couponApi = {
+  getAll:  (params = {}) => api.get('/admin/coupons', { params }),
+  getOne:  (code: string) => api.get(`/admin/coupons/${code}`),
+  create:  (data: Record<string, any>) => api.post('/admin/coupons', data),
+  update:  (code: string, data: Record<string, any>) => api.put(`/admin/coupons/${code}`, data),
+  delete:  (code: string) => api.delete(`/admin/coupons/${code}`),
+  apply:   (code: string, order_total: number) => api.post('/apply-coupon', { code, order_total }),
+  markUsed:(code: string, user_id: number) => api.post(`/admin/coupons/${code}/use`, { user_id }),
+}

@@ -254,7 +254,7 @@ function onClickOutside(e: MouseEvent) {
 const navItems = [
   { label: 'Trang chủ', to: '/' },
   { label: 'Sản phẩm', to: '/products' },
-  { label: 'Thương hiệu', to: '/brands' },
+  // { label: 'Thương hiệu', to: '/brands' },
   { label: 'Khuyến mãi', to: '/promotions', highlight: true },
   { label: 'Tin tức', to: '/news' },
   { label: 'Liên hệ', to: '/contact' },

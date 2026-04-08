@@ -56,10 +56,10 @@
 
       <div class="cart-summary">
         <h3>Tóm tắt đơn hàng</h3>
-        <div class="coupon-row">
+        <!-- <div class="coupon-row">
           <input v-model="couponCode" type="text" placeholder="Nhập mã giảm giá..." class="coupon-input" />
           <button class="btn-coupon" @click="applyCoupon">Áp dụng</button>
-        </div>
+        </div> -->
         <div class="summary-lines">
           <div class="summary-line">
             <span>Tạm tính:</span>
@@ -127,18 +127,18 @@ const deleteSelected = async () => {
   selectedIds.value = []
 }
 
-const applyCoupon = () => {
-  const code = couponCode.value.trim().toUpperCase()
-  if (code === 'GIAM10') {
-    discount.value = Math.round(selectedSubtotal.value * 0.1)
-    alert(`Áp dụng thành công! Giảm ${formatPrice(discount.value)}đ`)
-  } else if (code === 'FREESHIP') {
-    discount.value = shippingFee.value
-    alert('Áp dụng miễn phí vận chuyển!')
-  } else {
-    alert('Mã giảm giá không hợp lệ')
-  }
-}
+// const applyCoupon = () => {
+//   const code = couponCode.value.trim().toUpperCase()
+//   if (code === 'GIAM10') {
+//     discount.value = Math.round(selectedSubtotal.value * 0.1)
+//     alert(`Áp dụng thành công! Giảm ${formatPrice(discount.value)}đ`)
+//   } else if (code === 'FREESHIP') {
+//     discount.value = shippingFee.value
+//     alert('Áp dụng miễn phí vận chuyển!')
+//   } else {
+//     alert('Mã giảm giá không hợp lệ')
+//   }
+// }
 
 const checkout = () => {
   if (selectedIds.value.length === 0) return

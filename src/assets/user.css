@@ -963,3 +963,24 @@ img { display: block; max-width: 100%; }
 .u-logout-text {
   color: #e74c3c !important;
 }
+
+/* Variant groups */
+.pd-variant-section { display: flex; flex-direction: column; gap: 16px; }
+.pd-variant-group   { display: flex; flex-direction: column; gap: 10px; }
+.pd-selected-label  { font-weight: 400; color: #2d8c4e; margin-left: 4px; }
+.pd-option-list     { display: flex; flex-wrap: wrap; gap: 8px; }
+.pd-option-btn {
+  border: 2px solid #e0e8e3;
+  border-radius: 10px;
+  padding: 9px 20px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #333;
+  transition: all .2s;
+  font-family: inherit;
+}
+.pd-option-btn:hover:not(.disabled) { border-color: #2d8c4e; background: #f0faf4; }
+.pd-option-btn.active { border-color: #2d8c4e; background: #f0faf4; box-shadow: 0 0 0 3px #dcfce7; color: #1a5c2e; }
+.pd-option-btn.disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }

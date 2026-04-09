@@ -7,18 +7,18 @@
     </div>
 
     <div class="profile-layout">
-      <!-- Sidebar -->
+      <!-- ══ SIDEBAR ══ -->
       <aside class="sidebar">
         <div class="user-card">
           <div class="avatar-wrap">
-            <img :src="user.avatar" alt="avatar" class="avatar" />
-            <label class="avatar-edit-btn" title="Thay ảnh">
+            <img :src="avatarSrc" alt="avatar" class="avatar" />
+            <label class="avatar-edit-btn" title="Thay ảnh đại diện">
               <input type="file" accept="image/*" hidden @change="handleAvatarChange" />
-
+              📷
             </label>
           </div>
-          <h3>{{ user.fullName }}</h3>
-          <p>{{ user.email }}</p>
+          <h3>{{ authStore.user?.fullname || '—' }}</h3>
+          <p>{{ authStore.user?.email }}</p>
         </div>
 
         <nav class="side-nav">
@@ -29,19 +29,37 @@
           </button>
 
           <button class="nav-item nav-logout" @click="handleLogout">
-            <span class="nav-icon"></span>
+            <span class="nav-icon">🚪</span>
             Đăng xuất
           </button>
         </nav>
       </aside>
 
-      <!-- Main -->
+      <!-- ══ MAIN ══ -->
       <main class="main-content">
-        <!-- Thông tin cá nhân -->
+
+        <!-- ── Toast thông báo ── -->
+        <transition name="toast">
+          <div v-if="toast.show" :class="['toast', toast.type]">
+            <svg v-if="toast.type === 'success'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            {{ toast.message }}
+          </div>
+        </transition>
+
+        <!-- ════════════════════════════════════════
+             1. THÔNG TIN CÁ NHÂN
+        ════════════════════════════════════════ -->
         <section v-if="activeTab === 'info'" class="section-card">
           <div class="section-head">
             <h2>👤 Thông tin cá nhân</h2>
-            <button class="btn-edit" @click="editing = !editing">
+            <button class="btn-edit" @click="toggleEdit">
               {{ editing ? 'Huỷ' : 'Chỉnh sửa' }}
             </button>
           </div>
@@ -49,43 +67,41 @@
           <form @submit.prevent="saveProfile" class="form-grid">
             <div class="form-group">
               <label>Họ và tên <span class="required">*</span></label>
-              <input v-model="form.fullName" :disabled="!editing" type="text" placeholder="Nhập họ và tên" />
+              <input v-model="infoForm.fullname" :disabled="!editing" type="text" placeholder="Nhập họ và tên" />
             </div>
             <div class="form-group">
               <label>Số điện thoại <span class="required">*</span></label>
-              <input v-model="form.phone" :disabled="!editing" type="tel" placeholder="0901234567" />
+              <input v-model="infoForm.phone" :disabled="!editing" type="tel" placeholder="0901234567" />
             </div>
             <div class="form-group">
               <label>Email</label>
-              <input v-model="form.email" :disabled="true" type="email" class="disabled-field" />
+              <input v-model="infoForm.email" disabled type="email" class="disabled-field" />
             </div>
             <div class="form-group">
               <label>Ngày sinh</label>
-              <input v-model="form.birthday" :disabled="!editing" type="date" />
+              <input v-model="infoForm.birthday" :disabled="!editing" type="date" />
             </div>
             <div class="form-group full">
               <label>Địa chỉ</label>
-              <input v-model="form.address" :disabled="!editing" type="text"
+              <input v-model="infoForm.address" :disabled="!editing" type="text"
                 placeholder="Số nhà, đường, phường/xã..." />
             </div>
-            <div class="form-group full">
-              <label>Giới tính</label>
-              <div class="radio-group">
-                <label v-for="g in genders" :key="g.value" class="radio-label">
-                  <input v-model="form.gender" :disabled="!editing" type="radio" :value="g.value" />
-                  {{ g.label }}
-                </label>
-              </div>
-            </div>
+
             <div class="form-actions full" v-if="editing">
-              <button type="submit" class="btn-save">Lưu thay đổi</button>
+              <button type="submit" class="btn-save" :disabled="infoLoading">
+                <span v-if="infoLoading" class="btn-spin"></span>
+                {{ infoLoading ? 'Đang lưu...' : 'Lưu thay đổi' }}
+              </button>
             </div>
           </form>
         </section>
 
+        <!-- ════════════════════════════════════════
+             2. MÃ GIẢM GIÁ
+        ════════════════════════════════════════ -->
         <section v-if="activeTab === 'coupons'" class="section-card">
           <div class="section-head">
-            <h2>Mã giảm giá của tôi</h2>
+            <h2>🎫 Mã giảm giá của tôi</h2>
             <router-link to="/my-coupons" class="btn-goto-promo">+ Lấy thêm mã</router-link>
           </div>
 
@@ -116,218 +132,359 @@
               </div>
               <div class="coup-right">
                 <span :class="['coup-status', c.status]">
-                  {{ c.status === 'active' ? '✓ Còn dùng được' : c.status === 'used' ? '✗ Đã dùng' : '✗ Hết hạn' }}
+                  {{ c.status === 'active' ? '✓ Còn dùng' : c.status === 'used' ? '✗ Đã dùng' : '✗ Hết hạn' }}
                 </span>
                 <router-link v-if="c.status === 'active'" :to="{ name: 'checkout', query: { coupon: c.coupon_code } }"
-                  class="btn-use-now">
-                  Dùng ngay
-                </router-link>
+                  class="btn-use-now">Dùng ngay</router-link>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Đổi mật khẩu -->
+        <!-- ════════════════════════════════════════
+             3. ĐỊA CHỈ GIAO HÀNG
+        ════════════════════════════════════════ -->
+        <section v-if="activeTab === 'address'" class="section-card">
+          <div class="section-head">
+            <h2>📍 Địa chỉ giao hàng</h2>
+            <button class="btn-add" @click="openAddressModal()">+ Thêm địa chỉ</button>
+          </div>
+
+          <div v-if="addrLoading" class="coup-loading">
+            <div class="mini-spin"></div> Đang tải...
+          </div>
+
+          <div v-else-if="addresses.length === 0" class="coup-empty">
+            <div class="coup-empty-icon">📭</div>
+            <p>Bạn chưa có địa chỉ giao hàng nào.</p>
+            <button class="btn-add mt-12" @click="openAddressModal()">+ Thêm địa chỉ đầu tiên</button>
+          </div>
+
+          <div v-else class="address-list">
+            <div v-for="addr in addresses" :key="addr.id" :class="['address-card', { 'is-default': addr.is_default }]">
+              <div class="address-body">
+                <div class="address-name-row">
+                  <span class="addr-name">{{ addr.receiver_name }}</span>
+                  <span class="addr-sep">|</span>
+                  <span class="addr-phone">{{ addr.phone }}</span>
+                  <span v-if="addr.is_default" class="default-badge">✓ Mặc định</span>
+                </div>
+                <p class="addr-detail">
+                  {{ addr.detail_address }}, {{ addr.ward }}, {{ addr.district }}, {{ addr.province }}
+                </p>
+              </div>
+              <div class="address-actions">
+                <button class="btn-addr-edit" @click="openAddressModal(addr)">Sửa</button>
+                <button class="btn-addr-delete" @click="deleteAddress(addr.id)">Xoá</button>
+                <button v-if="!addr.is_default" class="btn-addr-default" @click="setDefaultAddress(addr.id)">Đặt mặc
+                  định</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════
+             4. ĐỔI MẬT KHẨU
+        ════════════════════════════════════════ -->
         <section v-if="activeTab === 'password'" class="section-card">
           <div class="section-head">
-            <h2>Đổi mật khẩu</h2>
+            <h2>🔒 Đổi mật khẩu</h2>
           </div>
-          <form @submit.prevent="changePassword" class="form-grid">
+
+          <div v-if="isGoogleAccount" class="google-notice">
+            <span>🔗</span>
+            <p>Tài khoản của bạn đăng nhập qua Google. Bạn không thể đổi mật khẩu tại đây.</p>
+          </div>
+
+          <form v-else @submit.prevent="changePassword" class="form-grid">
+            <!-- Mật khẩu hiện tại -->
             <div class="form-group full">
               <label>Mật khẩu hiện tại <span class="required">*</span></label>
               <div class="input-pw-wrap">
-                <input v-model="pwForm.current" :type="showPw.current ? 'text' : 'password'" placeholder="••••••••" />
+                <input v-model="pwForm.current_password" :type="showPw.current ? 'text' : 'password'"
+                  placeholder="••••••••" />
                 <button type="button" class="toggle-pw" @click="showPw.current = !showPw.current">
-                  {{ showPw.current ? 'ẩn' : 'hiện' }}
+                  <svg v-if="!showPw.current" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
                 </button>
               </div>
             </div>
+
+            <!-- Mật khẩu mới -->
             <div class="form-group full">
               <label>Mật khẩu mới <span class="required">*</span></label>
               <div class="input-pw-wrap">
-                <input v-model="pwForm.new" :type="showPw.new ? 'text' : 'password'" placeholder="Tối thiểu 8 ký tự" />
+                <input v-model="pwForm.new_password" :type="showPw.new ? 'text' : 'password'"
+                  placeholder="Tối thiểu 8 ký tự" />
                 <button type="button" class="toggle-pw" @click="showPw.new = !showPw.new">
-                  {{ showPw.new ? 'ẩn' : 'hiện' }}
+                  <svg v-if="!showPw.new" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
                 </button>
               </div>
-              <div class="pw-strength" v-if="pwForm.new">
+              <div class="pw-strength" v-if="pwForm.new_password">
                 <div class="strength-bar">
                   <div :class="['strength-fill', pwStrengthClass]" :style="{ width: pwStrengthWidth }"></div>
                 </div>
                 <span :class="['strength-label', pwStrengthClass]">{{ pwStrengthLabel }}</span>
               </div>
             </div>
+
+            <!-- Xác nhận mật khẩu mới -->
             <div class="form-group full">
               <label>Xác nhận mật khẩu mới <span class="required">*</span></label>
               <div class="input-pw-wrap">
-                <input v-model="pwForm.confirm" :type="showPw.confirm ? 'text' : 'password'"
+                <input v-model="pwForm.new_password_confirmation" :type="showPw.confirm ? 'text' : 'password'"
                   placeholder="Nhập lại mật khẩu mới" />
                 <button type="button" class="toggle-pw" @click="showPw.confirm = !showPw.confirm">
-                  {{ showPw.confirm ? 'ẩn' : 'hiện' }}
+                  <svg v-if="!showPw.confirm" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
                 </button>
               </div>
-              <p class="pw-mismatch" v-if="pwForm.confirm && pwForm.new !== pwForm.confirm">
+              <p class="pw-mismatch"
+                v-if="pwForm.new_password_confirmation && pwForm.new_password !== pwForm.new_password_confirmation">
                 Mật khẩu không khớp
               </p>
             </div>
+
             <div class="form-actions full">
-              <button type="submit" class="btn-save">Cập nhật mật khẩu</button>
+              <button type="submit" class="btn-save" :disabled="pwLoading">
+                <span v-if="pwLoading" class="btn-spin"></span>
+                {{ pwLoading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu' }}
+              </button>
             </div>
           </form>
         </section>
 
-        <!-- Địa chỉ -->
-        <section v-if="activeTab === 'address'" class="section-card">
-          <div class="section-head">
-            <h2>Địa chỉ giao hàng</h2>
-            <button class="btn-add" @click="showAddAddress = true">+ Thêm địa chỉ</button>
-          </div>
-
-          <div class="address-list">
-            <div v-for="addr in addresses" :key="addr.id" class="address-card">
-              <div class="address-body">
-                <div class="address-name-row">
-                  <span class="addr-name">{{ addr.name }}</span>
-                  <span class="addr-phone">{{ addr.phone }}</span>
-                  <span v-if="addr.isDefault" class="default-badge">Mặc định</span>
-                </div>
-                <p class="addr-detail">{{ addr.detail }}</p>
-              </div>
-              <div class="address-actions">
-                <button class="btn-addr-edit">Sửa</button>
-                <button class="btn-addr-delete" @click="deleteAddress(addr.id)">Xoá</button>
-                <button v-if="!addr.isDefault" class="btn-addr-default" @click="setDefault(addr.id)">
-                  Đặt mặc định
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Đơn hàng của tôi -->
-        <!-- <section v-if="activeTab === 'orders'" class="section-card">
-          <div class="section-head">
-            <h2>Đơn hàng của tôi</h2>
-          </div>
-          <div class="quick-order-stats">
-            <div v-for="stat in orderStats" :key="stat.label" class="stat-card" @click="$router.push('/order-history')">
-              <span class="stat-icon">{{ stat.icon }}</span>
-              <span class="stat-count">{{ stat.count }}</span>
-              <span class="stat-label">{{ stat.label }}</span>
-            </div>
-          </div>
-          <button class="btn-view-all" @click="$router.push('/order-history')">
-            Xem tất cả đơn hàng →
-          </button>
-        </section> -->
       </main>
     </div>
+
+    <!-- ══════════════════════════════════════════
+         MODAL: THÊM / SỬA ĐỊA CHỈ
+    ══════════════════════════════════════════ -->
+    <transition name="modal">
+      <div v-if="showAddrModal" class="modal-overlay" @click.self="closeAddressModal">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>{{ editingAddr ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới' }}</h3>
+            <button class="modal-close" @click="closeAddressModal">✕</button>
+          </div>
+
+          <form @submit.prevent="submitAddress" class="form-grid modal-form">
+            <div class="form-group">
+              <label>Người nhận <span class="required">*</span></label>
+              <input v-model="addrForm.receiver_name" type="text" placeholder="Nguyễn Văn An" required />
+            </div>
+            <div class="form-group">
+              <label>Số điện thoại <span class="required">*</span></label>
+              <input v-model="addrForm.phone" type="tel" placeholder="0901234567" required />
+            </div>
+            <div class="form-group">
+              <label>Tỉnh / Thành phố <span class="required">*</span></label>
+              <input v-model="addrForm.province" type="text" placeholder="TP. Hồ Chí Minh" required />
+            </div>
+            <div class="form-group">
+              <label>Quận / Huyện <span class="required">*</span></label>
+              <input v-model="addrForm.district" type="text" placeholder="Quận 1" required />
+            </div>
+            <div class="form-group">
+              <label>Phường / Xã <span class="required">*</span></label>
+              <input v-model="addrForm.ward" type="text" placeholder="Phường Bến Nghé" required />
+            </div>
+            <div class="form-group">
+              <label>Số nhà, tên đường <span class="required">*</span></label>
+              <input v-model="addrForm.detail_address" type="text" placeholder="123 Nguyễn Huệ" required />
+            </div>
+            <div class="form-group full checkbox-group">
+              <label class="check-label">
+                <input v-model="addrForm.is_default" type="checkbox" />
+                Đặt làm địa chỉ mặc định
+              </label>
+            </div>
+
+            <div class="form-actions full modal-actions">
+              <button type="button" class="btn-cancel" @click="closeAddressModal">Huỷ</button>
+              <button type="submit" class="btn-save" :disabled="addrSubmitting">
+                <span v-if="addrSubmitting" class="btn-spin"></span>
+                {{ addrSubmitting ? 'Đang lưu...' : (editingAddr ? 'Cập nhật' : 'Thêm địa chỉ') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import api from '@/api/index'
 import { useRouter } from 'vue-router'
+import api from '@/api/index'
 import { useAuthStore } from '@/user/stores/authStore'
 
-const activeTab = ref('info')
-const editing = ref(false)
-const showAddAddress = ref(false)
+interface ShippingAddress {
+  id: number
+  user_id: number
+  receiver_name: string
+  phone: string
+  province: string
+  district: string
+  ward: string
+  detail_address: string
+  is_default: boolean
+}
+
 const router = useRouter()
 const authStore = useAuthStore()
 
-const user = ref({
-  fullName: 'Nguyễn Văn An',
-  email: 'nguyenvanan@email.com',
-  avatar: 'https://placehold.co/80x80/e8f5e9/2e7d32?text=NVA',
-  phone: '0901234567'
-})
-
+const activeTab = ref('info')
 const navItems = [
-  { key: 'info', icon: '', label: 'Thông tin cá nhân' },
-  { key: 'coupons', icon: '', label: 'Mã giảm giá của tôi' },
-  // { key: 'orders', icon: '', label: 'Đơn hàng của tôi' },
-  { key: 'address', icon: '', label: 'Địa chỉ giao hàng' },
-  { key: 'password', icon: '', label: 'Đổi mật khẩu' },
+  { key: 'info',     icon: '👤', label: 'Thông tin cá nhân' },
+  { key: 'coupons',  icon: '🎫', label: 'Mã giảm giá của tôi' },
+  { key: 'address',  icon: '📍', label: 'Địa chỉ giao hàng' },
+  { key: 'password', icon: '🔒', label: 'Đổi mật khẩu' },
 ]
 
-const genders = [
-  { value: 'male', label: 'Nam' },
-  { value: 'female', label: 'Nữ' },
-  { value: 'other', label: 'Khác' },
-]
+// ── Toast ─────────────────────────────────────────────────────────────────
+const toast = ref({ show: false, message: '', type: 'success' })
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  toast.value = { show: true, message, type }
+  setTimeout(() => { toast.value.show = false }, 3500)
+}
 
-const form = ref({
-  fullName: 'Nguyễn Văn An',
-  phone: '0901234567',
-  email: 'nguyenvanan@email.com',
-  birthday: '1995-06-15',
-  address: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM',
-  gender: 'male'
+// ══════════════════════════════════════════════════════════════════════════
+// 1. THÔNG TIN CÁ NHÂN
+// ══════════════════════════════════════════════════════════════════════════
+const editing = ref(false)
+const infoLoading = ref(false)
+const avatarFile = ref<File | null>(null)
+const avatarPreview = ref<string | null>(null)
+
+const infoForm = ref({
+  fullname: '',
+  phone: '',
+  email: '',
+  birthday: '',
+  address: '',
 })
 
-const pwForm = ref({ current: '', new: '', confirm: '' })
-const showPw = ref({ current: false, new: false, confirm: false })
-
-const pwStrengthClass = computed(() => {
-  const pw = pwForm.value.new
-  if (!pw) return ''
-  if (pw.length < 6) return 'weak'
-  if (pw.length < 10 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw)) return 'medium'
-  return 'strong'
+const avatarSrc = computed(() => {
+  if (avatarPreview.value) return avatarPreview.value
+  const u = authStore.user as any
+  if (!u) return 'https://placehold.co/80x80/e8f5e9/2e7d32?text=User'
+  if (u.image) return u.image
+  if (u.avatar) return u.avatar
+  return 'https://placehold.co/80x80/e8f5e9/2e7d32?text=' + (u.fullname?.[0] || 'U')
 })
-const pwStrengthWidth = computed(() => ({ weak: '33%', medium: '66%', strong: '100%' }[pwStrengthClass.value] || '0%'))
-const pwStrengthLabel = computed(() => ({ weak: 'Yếu', medium: 'Trung bình', strong: 'Mạnh' }[pwStrengthClass.value] || ''))
 
-const addresses = ref([
-  {
-    id: 1, isDefault: true,
-    name: 'Nguyễn Văn An', phone: '0901234567',
-    detail: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM'
-  },
-  {
-    id: 2, isDefault: false,
-    name: 'Nguyễn Văn An', phone: '0912345678',
-    detail: '456 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM'
+function loadInfoForm() {
+  const u = authStore.user as any
+  if (!u) return
+  infoForm.value = {
+    fullname: u.fullname || '',
+    phone:    u.phone    || '',
+    email:    u.email    || '',
+    birthday: u.birthday ? u.birthday.split('T')[0] : '',
+    address:  u.address  || '',
   }
-])
-
-const orderStats = [
-  { icon: '', count: 1, label: 'Chờ xác nhận' },
-  { icon: '', count: 2, label: 'Đang giao' },
-  { icon: '', count: 12, label: 'Đã giao' },
-  { icon: '', count: 1, label: 'Đã huỷ' },
-]
-
-const handleAvatarChange = (e: any) => {
-  const file = e.target.files[0]
-  if (file) user.value.avatar = URL.createObjectURL(file)
-}
-const saveProfile = () => {
-  editing.value = false
-  user.value.fullName = form.value.fullName
-  alert('Cập nhật thông tin thành công!')
-}
-const changePassword = () => {
-  if (pwForm.value.new !== pwForm.value.confirm) return alert('Mật khẩu không khớp!')
-  alert('Đổi mật khẩu thành công!')
-  pwForm.value = { current: '', new: '', confirm: '' }
-}
-const deleteAddress = (id: number) => {
-  if (confirm('Xoá địa chỉ này?')) addresses.value = addresses.value.filter(a => a.id !== id)
-}
-const setDefault = (id: number) => {
-  addresses.value.forEach(a => a.isDefault = a.id === id)
 }
 
+function toggleEdit() {
+  if (editing.value) {
+    loadInfoForm()
+    avatarPreview.value = null
+    avatarFile.value = null
+  }
+  editing.value = !editing.value
+}
+
+function handleAvatarChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+  editing.value = true
+}
+
+async function saveProfile() {
+  infoLoading.value = true
+  try {
+    const formData = new FormData()
+    if (infoForm.value.fullname) formData.append('fullname', infoForm.value.fullname)
+    if (infoForm.value.phone)    formData.append('phone',    infoForm.value.phone)
+    if (infoForm.value.address)  formData.append('address',  infoForm.value.address)
+    if (infoForm.value.birthday) formData.append('birthday', infoForm.value.birthday)
+    if (avatarFile.value)        formData.append('image',    avatarFile.value)
+
+    const res = await api.post('/profile', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    if (authStore.user) {
+      const updated = res.data.data
+      authStore.user.fullname = updated.fullname
+      authStore.user.phone    = updated.phone
+      authStore.user.address  = updated.address
+      ;(authStore.user as any).birthday = updated.birthday
+      ;(authStore.user as any).image    = updated.image
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+
+    avatarFile.value    = null
+    avatarPreview.value = null
+    editing.value       = false
+    showToast('Cập nhật thông tin thành công!')
+  } catch (err: any) {
+    const errors = err.response?.data?.errors
+    if (errors) {
+      const firstError = Object.values(errors)[0] as string[]
+      showToast(firstError[0], 'error')
+    } else {
+      const msg = err.response?.data?.message || 'Cập nhật thất bại, vui lòng thử lại.'
+      showToast(msg, 'error')
+    }
+  } finally {
+    infoLoading.value = false
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 2. MÃ GIẢM GIÁ
+// ══════════════════════════════════════════════════════════════════════════
 const myCoupons = ref<any[]>([])
 const loadingCoup = ref(false)
 
 async function fetchMyCoupons() {
   loadingCoup.value = true
   try {
-    const res = await api.get('/user/my-coupons')
+    const res = await api.get('/auth/user/my-coupons')
     myCoupons.value = res.data
   } catch {
     myCoupons.value = []
@@ -336,21 +493,190 @@ async function fetchMyCoupons() {
   }
 }
 
-watch(activeTab, (val) => {
-  if (val === 'coupons') fetchMyCoupons()
+// ══════════════════════════════════════════════════════════════════════════
+// 3. ĐỊA CHỈ GIAO HÀNG
+// ══════════════════════════════════════════════════════════════════════════
+const addresses = ref<ShippingAddress[]>([])
+const addrLoading = ref(false)
+const showAddrModal = ref(false)
+const editingAddr = ref<ShippingAddress | null>(null)
+const addrSubmitting = ref(false)
+
+const emptyAddrForm = () => ({
+  receiver_name: '',
+  phone: '',
+  province: '',
+  district: '',
+  ward: '',
+  detail_address: '',
+  is_default: false,
 })
 
-onMounted(() => {
-  const params = new URLSearchParams(window.location.search)
-  if (params.get('tab') === 'coupons') {
-    activeTab.value = 'coupons'
+const addrForm = ref(emptyAddrForm())
+
+async function fetchAddresses() {
+  addrLoading.value = true
+  try {
+    const res = await api.get('/profile/addresses')
+    addresses.value = res.data.data
+  } catch {
+    addresses.value = []
+  } finally {
+    addrLoading.value = false
   }
-})
+}
 
+function openAddressModal(addr?: ShippingAddress) {
+  if (addr) {
+    editingAddr.value = addr
+    addrForm.value = {
+      receiver_name:  addr.receiver_name,
+      phone:          addr.phone,
+      province:       addr.province,
+      district:       addr.district,
+      ward:           addr.ward,
+      detail_address: addr.detail_address,
+      is_default:     addr.is_default,
+    }
+  } else {
+    editingAddr.value = null
+    addrForm.value = emptyAddrForm()
+  }
+  showAddrModal.value = true
+}
+
+function closeAddressModal() {
+  showAddrModal.value = false
+  editingAddr.value = null
+  addrForm.value = emptyAddrForm()
+}
+
+async function submitAddress() {
+  addrSubmitting.value = true
+  try {
+    if (editingAddr.value) {
+      await api.put(`/profile/addresses/${editingAddr.value.id}`, addrForm.value)
+      showToast('Cập nhật địa chỉ thành công!')
+    } else {
+      await api.post('/profile/addresses', addrForm.value)
+      showToast('Thêm địa chỉ thành công!')
+    }
+    closeAddressModal()
+    await fetchAddresses()
+  } catch (err: any) {
+    const msg = err.response?.data?.message || 'Không thể lưu địa chỉ.'
+    showToast(msg, 'error')
+  } finally {
+    addrSubmitting.value = false
+  }
+}
+
+async function deleteAddress(id: number) {
+  if (!confirm('Bạn có chắc muốn xoá địa chỉ này?')) return
+  try {
+    await api.delete(`/profile/addresses/${id}`)
+    showToast('Đã xoá địa chỉ.')
+    await fetchAddresses()
+  } catch {
+    showToast('Không thể xoá địa chỉ.', 'error')
+  }
+}
+
+async function setDefaultAddress(id: number) {
+  try {
+    await api.patch(`/profile/addresses/${id}/set-default`)
+    showToast('Đã đặt làm địa chỉ mặc định.')
+    await fetchAddresses()
+  } catch {
+    showToast('Không thể đặt mặc định.', 'error')
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 4. ĐỔI MẬT KHẨU
+// ══════════════════════════════════════════════════════════════════════════
+const pwLoading = ref(false)
+const pwForm = ref({
+  current_password: '',
+  new_password: '',
+  new_password_confirmation: '',
+})
+const showPw = ref({ current: false, new: false, confirm: false })
+
+const isGoogleAccount = computed(() => (authStore.user as any)?.provider === 'google')
+
+const pwStrengthClass = computed(() => {
+  const pw = pwForm.value.new_password
+  if (!pw) return ''
+  if (pw.length < 6) return 'weak'
+  if (pw.length < 10 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw)) return 'medium'
+  return 'strong'
+})
+const pwStrengthWidth = computed(() =>
+  ({ weak: '33%', medium: '66%', strong: '100%' }[pwStrengthClass.value] || '0%')
+)
+const pwStrengthLabel = computed(() =>
+  ({ weak: 'Yếu', medium: 'Trung bình', strong: 'Mạnh' }[pwStrengthClass.value] || '')
+)
+
+async function changePassword() {
+  if (pwForm.value.new_password !== pwForm.value.new_password_confirmation) {
+    showToast('Mật khẩu xác nhận không khớp!', 'error')
+    return
+  }
+  pwLoading.value = true
+  try {
+    await api.post('/profile/change-password', {
+      current_password:          pwForm.value.current_password,
+      new_password:              pwForm.value.new_password,
+      new_password_confirmation: pwForm.value.new_password_confirmation,
+    })
+    showToast('Đổi mật khẩu thành công!')
+    pwForm.value = { current_password: '', new_password: '', new_password_confirmation: '' }
+  } catch (err: any) {
+    const errors = err.response?.data?.errors
+    if (errors) {
+      const firstError = Object.values(errors)[0] as string[]
+      showToast(firstError[0], 'error')
+    } else {
+      const msg = err.response?.data?.message || 'Đổi mật khẩu thất bại.'
+      showToast(msg, 'error')
+    }
+  } finally {
+    pwLoading.value = false
+  }
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────
 async function handleLogout() {
   await authStore.logout()
   router.push('/')
 }
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────
+onMounted(async () => {
+  try {
+    const res = await api.get('/profile')
+    const u = res.data.data
+    if (authStore.user) {
+      Object.assign(authStore.user, u)
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+  } catch (_) { }
+
+  loadInfoForm()
+
+  const params = new URLSearchParams(window.location.search)
+  const tab = params.get('tab')
+  if (tab && navItems.find(n => n.key === tab)) {
+    activeTab.value = tab
+  }
+})
+
+watch(activeTab, (val) => {
+  if (val === 'coupons') fetchMyCoupons()
+  if (val === 'address') fetchAddresses()
+})
 </script>
 
 <style scoped>
@@ -362,20 +688,9 @@ async function handleLogout() {
   color: #222;
 }
 
-.breadcrumb {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 16px;
-}
-
-.breadcrumb .sep {
-  margin: 0 6px;
-}
-
-.breadcrumb .active {
-  color: #2e7d32;
-  font-weight: 500;
-}
+.breadcrumb { font-size: 13px; color: #888; margin-bottom: 16px; }
+.breadcrumb .sep { margin: 0 6px; }
+.breadcrumb .active { color: #2e7d32; font-weight: 500; }
 
 .profile-layout {
   display: grid;
@@ -384,11 +699,11 @@ async function handleLogout() {
   align-items: start;
 }
 
-/* Sidebar */
+/* ── Sidebar ── */
 .sidebar {
   background: #fff;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   position: sticky;
   top: 80px;
@@ -401,691 +716,251 @@ async function handleLogout() {
   text-align: center;
 }
 
-.avatar-wrap {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 12px;
-}
-
-.avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid rgba(255, 255, 255, .4);
-}
-
+.avatar-wrap { position: relative; display: inline-block; margin-bottom: 12px; }
+.avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,.4); }
 .avatar-edit-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: #fff;
-  border-radius: 50%;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+  position: absolute; bottom: 0; right: 0;
+  background: #fff; border-radius: 50%; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2);
 }
+.user-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+.user-card p  { font-size: 12px; opacity: .8; margin: 0; word-break: break-all; }
 
-.user-card h3 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0 0 4px;
-}
-
-.user-card p {
-  font-size: 12px;
-  opacity: .8;
-  margin: 0;
-}
-
-.side-nav {
-  padding: 8px 0;
-}
-
+.side-nav { padding: 8px 0; }
 .nav-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 12px 18px;
+  background: none; border: none; border-left: 3px solid transparent;
+  text-align: left; font-size: 14px; color: #444; cursor: pointer; transition: all .2s;
+}
+.nav-item:hover { background: #f1f8f2; color: #2e7d32; }
+.nav-item.active { background: #e8f5e9; color: #2e7d32; font-weight: 600; border-left-color: #2e7d32; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-logout { color: #e53935; border-top: 1px solid #f0f0f0; margin-top: 4px; }
+.nav-logout:hover { background: #fef2f2; color: #c62828; }
+
+/* ── Main ── */
+.main-content { min-width: 0; position: relative; }
+.section-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 24px; }
+.section-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid #e8f5e9;
+}
+.section-head h2 { font-size: 17px; font-weight: 700; color: #1b5e20; margin: 0; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  right: auto;
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  z-index: 9999;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+  max-width: 340px;
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  padding: 12px 18px;
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: 14px;
-  color: #444;
-  cursor: pointer;
-  transition: all .2s;
-  border-left: 3px solid transparent;
 }
+.toast.success { background: #1a5c2e; }
+.toast.error   { background: #dc2626; }
+.toast-enter-active, .toast-leave-active { transition: all .3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(16px); }
 
-.nav-item:hover {
-  background: #f1f8f2;
-  color: #2e7d32;
-}
-
-.nav-item.active {
-  background: #e8f5e9;
-  color: #2e7d32;
-  font-weight: 600;
-  border-left-color: #2e7d32;
-}
-
-.nav-icon {
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
-}
-
-/* Main */
-.main-content {
-  min-width: 0;
-}
-
-.section-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 24px;
-}
-
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 2px solid #e8f5e9;
-}
-
-.section-head h2 {
-  font-size: 17px;
-  font-weight: 700;
-  color: #1b5e20;
-  margin: 0;
-}
-
+/* ── Buttons ── */
 .btn-edit {
-  padding: 7px 16px;
-  border: 1.5px solid #2e7d32;
-  color: #2e7d32;
-  background: #fff;
-  border-radius: 5px;
-  font-size: 13px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all .2s;
+  padding: 7px 16px; border: 1.5px solid #2e7d32; color: #2e7d32;
+  background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; transition: all .2s;
 }
-
-.btn-edit:hover {
-  background: #2e7d32;
-  color: #fff;
-}
+.btn-edit:hover { background: #2e7d32; color: #fff; }
 
 .btn-add {
-  padding: 7px 16px;
-  background: #2e7d32;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  font-size: 13px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background .2s;
+  padding: 7px 16px; background: #2e7d32; color: #fff; border: none;
+  border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; transition: background .2s;
 }
-
-.btn-add:hover {
-  background: #1b5e20;
-}
-
-/* Form */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group.full {
-  grid-column: 1 / -1;
-}
-
-.form-group label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #444;
-}
-
-.required {
-  color: #e53935;
-}
-
-.form-group input:not([type="radio"]) {
-  padding: 10px 13px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #333;
-  outline: none;
-  transition: border .2s;
-  background: #fff;
-  font-family: inherit;
-}
-
-.form-group input:not([type="radio"]):focus {
-  border-color: #2e7d32;
-  box-shadow: 0 0 0 3px rgba(46, 125, 50, .1);
-}
-
-.form-group input:disabled {
-  background: #f9f9f9;
-  color: #999;
-  cursor: not-allowed;
-}
-
-.disabled-field {
-  background: #f5f5f5 !important;
-}
-
-.radio-group {
-  display: flex;
-  gap: 20px;
-  padding-top: 4px;
-}
-
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #444;
-  cursor: pointer;
-}
-
-.radio-label input[type="radio"] {
-  accent-color: #2e7d32;
-  width: 16px;
-  height: 16px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-start;
-}
+.btn-add:hover { background: #1b5e20; }
+.btn-add.mt-12 { margin-top: 12px; }
 
 .btn-save {
-  padding: 11px 28px;
-  background: #2e7d32;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .2s, transform .1s;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 28px; background: #2e7d32; color: #fff; border: none;
+  border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;
+}
+.btn-save:hover:not(:disabled) { background: #1b5e20; transform: translateY(-1px); }
+.btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+.btn-cancel {
+  padding: 11px 20px; border: 1.5px solid #bbb; color: #555;
+  background: #fff; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all .2s;
+}
+.btn-cancel:hover { border-color: #888; background: #f5f5f5; }
+
+.btn-spin {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+  border-radius: 50%; animation: spin .7s linear infinite;
 }
 
-.btn-save:hover {
-  background: #1b5e20;
-  transform: translateY(-1px);
-}
+/* ── Form ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 13px; font-weight: 600; color: #444; }
+.required { color: #e53935; }
 
-/* Password */
-.input-pw-wrap {
-  position: relative;
+.form-group input:not([type="checkbox"]) {
+  padding: 10px 13px; border: 1px solid #ddd; border-radius: 6px;
+  font-size: 14px; color: #333; outline: none; transition: border .2s;
+  background: #fff; font-family: inherit; width: 100%; box-sizing: border-box;
 }
-
-.input-pw-wrap input {
-  width: 100%;
-  padding: 10px 42px 10px 13px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-  transition: border .2s;
-  box-sizing: border-box;
-  font-family: inherit;
+.form-group input:not([type="checkbox"]):focus {
+  border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,.1);
 }
+.form-group input:disabled { background: #f9f9f9; color: #999; cursor: not-allowed; }
+.disabled-field { background: #f5f5f5 !important; }
+.form-actions { display: flex; gap: 10px; }
+.checkbox-group { padding-top: 4px; }
+.check-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #444; cursor: pointer; }
+.check-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2e7d32; }
 
-.input-pw-wrap input:focus {
-  border-color: #2e7d32;
-  box-shadow: 0 0 0 3px rgba(46, 125, 50, .1);
-}
-
+/* ── Password ── */
+.input-pw-wrap { position: relative; }
+.input-pw-wrap input { padding-right: 42px !important; }
 .toggle-pw {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #888; padding: 0;
 }
+.toggle-pw:hover { color: #2e7d32; }
 
-.pw-strength {
-  margin-top: 8px;
+.pw-strength { margin-top: 8px; }
+.strength-bar { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 4px; }
+.strength-fill { height: 100%; border-radius: 2px; transition: width .3s; }
+.strength-fill.weak   { background: #e53935; }
+.strength-fill.medium { background: #f57c00; }
+.strength-fill.strong { background: #2e7d32; }
+.strength-label { font-size: 12px; font-weight: 600; }
+.strength-label.weak   { color: #e53935; }
+.strength-label.medium { color: #f57c00; }
+.strength-label.strong { color: #2e7d32; }
+.pw-mismatch { font-size: 12px; color: #e53935; margin-top: 5px; }
+
+.google-notice {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px; background: #fff8e1; border: 1px solid #ffe082;
+  border-radius: 8px; color: #795548; font-size: 14px;
 }
+.google-notice span { font-size: 24px; }
 
-.strength-bar {
-  height: 4px;
-  background: #eee;
-  border-radius: 2px;
-  margin-bottom: 4px;
-}
-
-.strength-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width .3s;
-}
-
-.strength-fill.weak {
-  background: #e53935;
-}
-
-.strength-fill.medium {
-  background: #f57c00;
-}
-
-.strength-fill.strong {
-  background: #2e7d32;
-}
-
-.strength-label {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.strength-label.weak {
-  color: #e53935;
-}
-
-.strength-label.medium {
-  color: #f57c00;
-}
-
-.strength-label.strong {
-  color: #2e7d32;
-}
-
-.pw-mismatch {
-  font-size: 12px;
-  color: #e53935;
-  margin-top: 5px;
-}
-
-/* Address */
-.address-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
+/* ── Address ── */
+.address-list { display: flex; flex-direction: column; gap: 12px; }
 .address-card {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  transition: border-color .2s;
+  border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: border-color .2s;
 }
-
-.address-card:hover {
-  border-color: #2e7d32;
-}
-
-.address-body {
-  flex: 1;
-}
-
-.address-name-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 5px;
-  flex-wrap: wrap;
-}
-
-.addr-name {
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.addr-phone {
-  font-size: 13px;
-  color: #555;
-}
-
+.address-card:hover { border-color: #2e7d32; }
+.address-card.is-default { border-color: #a5d6a7; background: #f9fdf9; }
+.address-body { flex: 1; }
+.address-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+.addr-name { font-weight: 700; font-size: 14px; }
+.addr-sep  { color: #ccc; }
+.addr-phone { font-size: 13px; color: #555; }
 .default-badge {
-  background: #e8f5e9;
-  color: #2e7d32;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  border: 1px solid #a5d6a7;
+  background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 10px; border: 1px solid #a5d6a7;
 }
-
-.addr-detail {
-  font-size: 13px;
-  color: #666;
+.addr-detail { font-size: 13px; color: #666; margin: 0; }
+.address-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.btn-addr-edit, .btn-addr-delete, .btn-addr-default {
+  padding: 5px 12px; border-radius: 4px; font-size: 12px;
+  cursor: pointer; border: 1px solid; transition: all .15s; white-space: nowrap;
 }
+.btn-addr-edit    { border-color: #2e7d32; color: #2e7d32; background: #fff; }
+.btn-addr-edit:hover { background: #2e7d32; color: #fff; }
+.btn-addr-delete  { border-color: #e53935; color: #e53935; background: #fff; }
+.btn-addr-delete:hover { background: #e53935; color: #fff; }
+.btn-addr-default { border-color: #aaa; color: #666; background: #fff; }
+.btn-addr-default:hover { border-color: #2e7d32; color: #2e7d32; }
 
-.address-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.btn-addr-edit,
-.btn-addr-delete,
-.btn-addr-default {
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  border: 1px solid;
-  transition: all .15s;
-  white-space: nowrap;
-}
-
-.btn-addr-edit {
-  border-color: #2e7d32;
-  color: #2e7d32;
-  background: #fff;
-}
-
-.btn-addr-edit:hover {
-  background: #2e7d32;
-  color: #fff;
-}
-
-.btn-addr-delete {
-  border-color: #e53935;
-  color: #e53935;
-  background: #fff;
-}
-
-.btn-addr-delete:hover {
-  background: #e53935;
-  color: #fff;
-}
-
-.btn-addr-default {
-  border-color: #888;
-  color: #555;
-  background: #fff;
-}
-
-.btn-addr-default:hover {
-  border-color: #2e7d32;
-  color: #2e7d32;
-}
-
-/* Order stats */
-.quick-order-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all .2s;
-  text-align: center;
-}
-
-.stat-card:hover {
-  border-color: #2e7d32;
-  background: #f1f8f2;
-  transform: translateY(-2px);
-}
-
-.stat-icon {
-  font-size: 26px;
-  margin-bottom: 8px;
-}
-
-.stat-count {
-  font-size: 24px;
-  font-weight: 800;
-  color: #2e7d32;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #777;
-  margin-top: 3px;
-}
-
-.btn-view-all {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  background: #f1f8f2;
-  border: 1.5px solid #2e7d32;
-  color: #2e7d32;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .2s;
-}
-
-.btn-view-all:hover {
-  background: #2e7d32;
-  color: #fff;
-}
-
+/* ── Coupon ── */
 .btn-goto-promo {
-  padding: 7px 16px;
-  border: 1.5px solid #2e7d32;
-  border-radius: 20px;
-  color: #2e7d32;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all .2s;
+  padding: 7px 16px; border: 1.5px solid #2e7d32; border-radius: 20px;
+  color: #2e7d32; font-size: 13px; font-weight: 600; text-decoration: none; transition: all .2s;
 }
+.btn-goto-promo:hover, .btn-goto-promo.filled { background: #2e7d32; color: #fff; }
+.btn-goto-promo.filled { display: inline-block; margin-top: 12px; padding: 10px 24px; }
 
-.btn-goto-promo:hover,
-.btn-goto-promo.filled {
-  background: #2e7d32;
-  color: #fff;
-}
-
-.btn-goto-promo.filled {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 10px 24px;
-}
-
-.coup-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 24px;
-  color: #888;
-  font-size: 14px;
-}
-
+.coup-loading { display: flex; align-items: center; gap: 10px; padding: 24px; color: #888; font-size: 14px; }
 .mini-spin {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e8f5e9;
-  border-top-color: #2e7d32;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
+  width: 20px; height: 20px; border: 2px solid #e8f5e9;
+  border-top-color: #2e7d32; border-radius: 50%; animation: spin .7s linear infinite;
 }
-
-.coup-empty {
-  text-align: center;
-  padding: 40px;
-  color: #aaa;
-}
-
-.coup-empty-icon {
-  font-size: 48px;
-  margin-bottom: 10px;
-}
-
-.coup-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.coup-item {
-  display: flex;
-  align-items: center;
-  border: 1.5px solid #e8f5e9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.coup-item.expired,
-.coup-item.used {
-  opacity: .6;
-}
-
+.coup-empty { text-align: center; padding: 40px; color: #aaa; }
+.coup-empty-icon { font-size: 48px; margin-bottom: 10px; }
+.coup-list { display: flex; flex-direction: column; gap: 10px; }
+.coup-item { display: flex; align-items: center; border: 1.5px solid #e8f5e9; border-radius: 10px; overflow: hidden; }
+.coup-item.expired, .coup-item.used { opacity: .6; }
 .coup-left {
-  background: linear-gradient(160deg, #2e7d32, #1b5e20);
-  color: #fff;
-  padding: 14px;
-  min-width: 110px;
-  text-align: center;
+  background: linear-gradient(160deg, #2e7d32, #1b5e20); color: #fff;
+  padding: 14px; min-width: 110px; text-align: center;
 }
-
-.coup-item.expired .coup-left,
-.coup-item.used .coup-left {
-  background: #9e9e9e;
-}
-
-.coup-discount {
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.coup-min {
-  font-size: 9px;
-  opacity: .85;
-  margin-top: 4px;
-}
-
-.coup-mid {
-  flex: 1;
-  padding: 12px 14px;
-  border-left: 1px dashed #e0e0e0;
-  border-right: 1px dashed #e0e0e0;
-}
-
-.coup-code {
-  font-size: 15px;
-  font-weight: 800;
-  color: #1b5e20;
-  font-family: monospace;
-  letter-spacing: 1.5px;
-}
-
-.coup-item.expired .coup-code,
-.coup-item.used .coup-code {
-  color: #9e9e9e;
-}
-
-.coup-desc {
-  font-size: 12px;
-  color: #666;
-  margin-top: 2px;
-}
-
-.coup-expire {
-  font-size: 11px;
-  color: #e53935;
-  margin-top: 4px;
-}
-
-.coup-right {
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  min-width: 110px;
-}
-
-.coup-status {
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.coup-status.active {
-  color: #2e7d32;
-}
-
-.coup-status.expired,
-.coup-status.used {
-  color: #9e9e9e;
-}
-
+.coup-item.expired .coup-left, .coup-item.used .coup-left { background: #9e9e9e; }
+.coup-discount { font-size: 15px; font-weight: 800; }
+.coup-min { font-size: 9px; opacity: .85; margin-top: 4px; }
+.coup-mid { flex: 1; padding: 12px 14px; border-left: 1px dashed #e0e0e0; border-right: 1px dashed #e0e0e0; }
+.coup-code { font-size: 15px; font-weight: 800; color: #1b5e20; font-family: monospace; letter-spacing: 1.5px; }
+.coup-item.expired .coup-code, .coup-item.used .coup-code { color: #9e9e9e; }
+.coup-desc { font-size: 12px; color: #666; margin-top: 2px; }
+.coup-expire { font-size: 11px; color: #e53935; margin-top: 4px; }
+.coup-right { padding: 12px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 110px; }
+.coup-status { font-size: 11px; font-weight: 700; }
+.coup-status.active { color: #2e7d32; }
+.coup-status.expired, .coup-status.used { color: #9e9e9e; }
 .btn-use-now {
-  padding: 6px 14px;
-  background: #2e7d32;
-  color: #fff;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
+  padding: 6px 14px; background: #2e7d32; color: #fff;
+  border-radius: 16px; font-size: 12px; font-weight: 600; text-decoration: none;
 }
+.btn-use-now:hover { background: #1b5e20; }
 
-.btn-use-now:hover {
-  background: #1b5e20;
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
 }
+.modal-box {
+  background: #fff; border-radius: 12px; width: 100%; max-width: 600px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 24px; border-bottom: 1px solid #e0e0e0;
+}
+.modal-header h3 { font-size: 16px; font-weight: 700; color: #1b5e20; margin: 0; }
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; }
+.modal-close:hover { color: #333; }
+.modal-form { padding: 20px 24px; }
+.modal-actions { justify-content: flex-end; }
+.modal-enter-active, .modal-leave-active { transition: all .25s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.96); }
 
-.nav-logout {
-  color: #e53935;
-  border-top: 1px solid #f0f0f0;
-  margin-top: 4px;
-}
-.nav-logout:hover {
-  background: #fef2f2;
-  color: #c62828;
-}
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .profile-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-order-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .profile-layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .form-grid { grid-template-columns: 1fr; }
+  .address-card { flex-direction: column; align-items: flex-start; }
+  .address-actions { width: 100%; }
+  .coup-item { flex-direction: column; }
+  .coup-mid { border: none; border-top: 1px dashed #e0e0e0; border-bottom: 1px dashed #e0e0e0; width: 100%; }
+  .coup-right { width: 100%; }
 }
 </style>

@@ -1,6 +1,12 @@
 <template>
   <div class="promo-page">
 
+    <transition name="toast-fade">
+      <div v-if="toast.show" :class="['pd-toast', toast.type]">
+        {{ toast.message }}
+      </div>
+    </transition>
+
     <!-- Tiêu đề đơn giản -->
     <div class="promo-header">
       <h1>🏷️ Khuyến mãi hôm nay</h1>
@@ -91,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/user/stores/authStore'
 import api from '@/api/index'
 
@@ -109,6 +115,21 @@ const loading    = ref(false)
 const allCoupons = ref<CouponPublic[]>([])
 const myCoupons  = ref<any[]>([])
 const savingCode = ref('')
+const toast = ref({ show: false, message: '', type: 'success' })
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  toast.value = { show: true, message, type }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+    toastTimer = null
+  }, 3000)
+}
+
+onBeforeUnmount(() => {
+  if (toastTimer) clearTimeout(toastTimer)
+})
 
 const savedCodes = computed(() =>
   new Set(myCoupons.value.map((c: any) => c.coupon_code))
@@ -150,8 +171,9 @@ async function saveCoupon(code: string) {
   try {
     await api.post('/user/save-coupon', { coupon_code: code })
     await fetchMyCoupons()
+    showToast(`Đã lưu mã "${code}" vào danh sách của bạn!`, 'success')
   } catch (e: any) {
-    alert(e.userMessage || 'Không thể lưu mã này.')
+    showToast(e.userMessage || 'Không thể lưu mã này.', 'error')
   } finally {
     savingCode.value = ''
   }
@@ -282,6 +304,26 @@ onMounted(async () => {
   border-color: #a5d6a7; cursor: default;
 }
 .btn-save:disabled { opacity: .7; cursor: not-allowed; }
+
+/* Toast */
+.pd-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  right: auto;
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  z-index: 9999;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+  max-width: 340px;
+}
+.pd-toast.success { background: #1a5c2e; }
+.pd-toast.error   { background: #dc2626; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all .3s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(16px); }
 
 /* Link xem mã đã lưu */
 .saved-link-row { margin-top: 24px; text-align: center; }

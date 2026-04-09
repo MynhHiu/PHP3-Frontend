@@ -8,6 +8,9 @@ export interface CartItem {
   product_sku_code: string
   quantity: number
   user_id: number
+  stock?: number
+  price?: number
+  image_url?: string
   product?: {
     name: string
     image_url: string

@@ -125,14 +125,48 @@
           </div>
 
           <!-- Coupon -->
-          <div class="coupon-row">
-            <input v-model="couponCode" type="text" placeholder="Mã giảm giá..." class="coupon-input"
-              :disabled="couponOk" />
-            <button class="btn-coupon" @click="applyCoupon" :disabled="couponOk || couponApplying">
-              {{ couponOk ? 'Đã áp dụng' : couponApplying ? 'Đang kiểm tra...' : 'Áp dụng' }}
-            </button>
+          <!-- ✅ THAY bằng đoạn MỚI này: -->
+          <div class="coupon-section">
+            <div class="coupon-row">
+              <input v-model="couponCode" type="text" placeholder="Nhập mã giảm giá..." class="coupon-input"
+                :disabled="couponOk" @input="couponCode = couponCode.toUpperCase()" />
+              <button class="btn-coupon" @click="applyCoupon" :disabled="couponOk || couponApplying">
+                {{ couponOk ? 'Đã áp dụng' : couponApplying ? 'Đang kiểm tra...' : 'Áp dụng' }}
+              </button>
+            </div>
+            <p v-if="couponMsg" :class="['coupon-msg', couponOk ? 'ok' : 'err']">{{ couponMsg }}</p>
+            <!-- Mã đã lưu — có thể thu gọn -->
+            <div v-if="savedCoupons.length > 0" class="saved-coupons">
+              <button class="saved-toggle" @click="showSavedList = !showSavedList">
+                🎟️ Mã đã lưu của bạn ({{savedCoupons.filter(c => c.status === 'active').length}} dùng được)
+                <span class="toggle-arrow" :class="{ open: showSavedList }">▾</span>
+              </button>
+
+              <div v-if="showSavedList" class="saved-list">
+                <div v-for="c in savedCoupons" :key="c.coupon_code"
+                  :class="['saved-item', c.status, { selected: couponCode === c.coupon_code && couponOk }]">
+                  <div class="saved-left">
+                    <span class="saved-code">{{ c.coupon_code }}</span>
+                    <!-- <span class="saved-desc">{{ c.description }}</span> -->
+                    <span v-if="c.minordervalue > 0" class="saved-min">
+                      Đơn tối thiểu {{ Number(c.minordervalue).toLocaleString('vi-VN') }}₫
+                    </span>
+                  </div>
+                  <div class="saved-right">
+                    <span class="saved-discount">{{ c.discount_display }}</span>
+                    <!-- <span :class="['saved-status', c.status]">
+                      {{ c.status === 'active' ? '✓ Dùng được' : c.status === 'used' ? 'Đã dùng' : 'Hết hạn' }}
+                    </span> -->
+                    <button v-if="c.status === 'active'" class="btn-select-coupon"
+                      :class="{ 'is-selected': couponCode === c.coupon_code && couponOk }"
+                      :disabled="couponOk && couponCode !== c.coupon_code" @click="selectSavedCoupon(c)">
+                      {{ couponCode === c.coupon_code && couponOk ? '✓ Đang dùng' : 'Chọn' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <p v-if="couponMsg" :class="['coupon-msg', couponOk ? 'ok' : 'err']">{{ couponMsg }}</p>
 
           <!-- Tổng tiền -->
           <div class="summary-lines">
@@ -179,7 +213,7 @@ import { useRoute } from 'vue-router'
 import { useCartStore } from '@/user/stores/cartStore'
 import { useAuthStore } from '@/user/stores/authStore'
 import { useOrderStore } from '@/user/stores/orderStore'
-import { couponApi } from '@/api'
+import api, { couponApi } from '@/api'
 
 const route = useRoute()
 const cartStore = useCartStore()
@@ -271,6 +305,25 @@ async function applyCoupon() {
   }
 }
 
+const savedCoupons = ref([])
+const showSavedList = ref(false)
+
+async function fetchSavedCoupons() {
+  try {
+    const res = await api.get('/user/my-coupons')
+    savedCoupons.value = res.data
+  } catch {
+    savedCoupons.value = []
+  }
+}
+
+function selectSavedCoupon(c: any) {
+  couponCode.value = c.coupon_code
+  couponMsg.value = ''
+  couponOk.value = false
+  showSavedList.value = false
+}
+
 /* ── Validate ────────────────────────────────────────────────── */
 function validate(): boolean {
   let ok = true
@@ -324,6 +377,7 @@ async function placeOrder() {
 
     // VNPay: tạo đơn rồi redirect sang cổng thanh toán
     if (form.value.payment === 'vnpay') {
+      sessionStorage.setItem('vnpay_checkout_ids', JSON.stringify(selectedIds.value))
       import('@/api').then(async ({ default: api }) => {
         const res = await api.post('/vnpay/create-payment', payload)
         window.location.href = res.data.payment_url
@@ -363,6 +417,13 @@ onMounted(async () => {
   // Nếu đã đăng nhập, lấy thông tin mới nhất từ server để điền form
   if (authStore.isLoggedIn) {
     await authStore.fetchMe()
+    await fetchSavedCoupons()
+  }
+
+  const couponFromUrl = route.query.coupon as string
+  if (couponFromUrl) {
+    couponCode.value = couponFromUrl.toUpperCase()
+    applyCoupon()
   }
 
   // Xử lý khi VNPay redirect về trang checkout (trường hợp thất bại)
@@ -372,7 +433,9 @@ onMounted(async () => {
     const orderId = Number(route.query.order_id)
     successOrderId.value = orderId
     orderSuccess.value = true
-    cartStore.clearCart()   // xóa giỏ hàng nếu có hàm này
+    const savedIds = JSON.parse(sessionStorage.getItem('vnpay_checkout_ids') || '[]') // ← thay
+    for (const id of savedIds) { await cartStore.removeItem(id).catch(() => { }) }     // ← thay
+    sessionStorage.removeItem('vnpay_checkout_ids')                                    // ← thay
     return
   }
 
@@ -920,6 +983,163 @@ onMounted(async () => {
 
 .btn-back-cart:hover {
   text-decoration: underline;
+}
+
+.saved-coupons {
+  margin-top: 10px;
+}
+
+.saved-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1.5px solid #e8f5e9;
+  border-radius: 8px;
+  background: #fff;
+  gap: 10px;
+}
+
+.saved-item.used,
+.saved-item.expired {
+  opacity: .5;
+}
+
+.saved-item.selected {
+  border-color: #2e7d32;
+  background: #f1f8e9;
+}
+
+.saved-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.saved-code {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: monospace;
+  color: #1b5e20;
+  display: block;
+}
+
+.saved-item.used .saved-code,
+.saved-item.expired .saved-code {
+  color: #9e9e9e;
+}
+
+.saved-desc {
+  font-size: 11px;
+  color: #777;
+  display: block;
+  margin-top: 2px;
+}
+
+.saved-min {
+  font-size: 10px;
+  color: #e65100;
+  display: block;
+  margin-top: 2px;
+}
+
+.saved-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.saved-discount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+.saved-status {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.saved-status.active {
+  color: #2e7d32;
+}
+
+.saved-status.used,
+.saved-status.expired {
+  color: #9e9e9e;
+}
+
+.btn-select-coupon {
+  margin-top: 4px;
+  padding: 5px 14px;
+  border: 1.5px solid #2e7d32;
+  border-radius: 14px;
+  background: #fff;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.btn-select-coupon:hover:not(:disabled):not(.is-selected) {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.btn-select-coupon.is-selected {
+  background: #2e7d32;
+  color: #fff;
+  cursor: default;
+}
+
+.btn-select-coupon:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.saved-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  background: #f1f8e9;
+  border: 1.5px solid #c8e6c9;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2e7d32;
+  cursor: pointer;
+  transition: background .2s;
+  margin-top: 8px;
+}
+
+.saved-toggle:hover {
+  background: #e8f5e9;
+}
+
+.toggle-arrow {
+  font-size: 14px;
+  transition: transform .2s;
+}
+
+.toggle-arrow.open {
+  transform: rotate(180deg);
 }
 
 @media (max-width: 860px) {

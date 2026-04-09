@@ -31,6 +31,8 @@ const GoogleCallback   = () => import('@/user/views/GoogleCallback.vue')
 
 const VariantManager = () => import('@/admin/views/VariantManager.vue')
 
+const CouponsView = () => import('@/user/views/CouponsView.vue')
+
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior() {
@@ -100,6 +102,7 @@ const router = createRouter({
         { path: 'profile', component: ProfileView, name: 'profile' },
         { path: 'order-history', component: OrderHistoryView, name: 'order-history' },
         { path: 'order/:id', component: OrderDetailView, name: 'order-detail' },
+        { path: 'coupons', component: CouponsView, name: 'my-coupons' },
       ],
     },
 

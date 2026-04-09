@@ -22,14 +22,15 @@
         </div>
 
         <nav class="side-nav">
-          <button
-            v-for="item in navItems"
-            :key="item.key"
-            :class="['nav-item', { active: activeTab === item.key }]"
-            @click="activeTab = item.key"
-          >
+          <button v-for="item in navItems" :key="item.key" :class="['nav-item', { active: activeTab === item.key }]"
+            @click="activeTab = item.key">
             <span class="nav-icon">{{ item.icon }}</span>
             {{ item.label }}
+          </button>
+
+          <button class="nav-item nav-logout" @click="handleLogout">
+            <span class="nav-icon"></span>
+            Đăng xuất
           </button>
         </nav>
       </aside>
@@ -64,7 +65,8 @@
             </div>
             <div class="form-group full">
               <label>Địa chỉ</label>
-              <input v-model="form.address" :disabled="!editing" type="text" placeholder="Số nhà, đường, phường/xã..." />
+              <input v-model="form.address" :disabled="!editing" type="text"
+                placeholder="Số nhà, đường, phường/xã..." />
             </div>
             <div class="form-group full">
               <label>Giới tính</label>
@@ -79,6 +81,50 @@
               <button type="submit" class="btn-save">Lưu thay đổi</button>
             </div>
           </form>
+        </section>
+
+        <section v-if="activeTab === 'coupons'" class="section-card">
+          <div class="section-head">
+            <h2>Mã giảm giá của tôi</h2>
+            <router-link to="/my-coupons" class="btn-goto-promo">+ Lấy thêm mã</router-link>
+          </div>
+
+          <div v-if="loadingCoup" class="coup-loading">
+            <div class="mini-spin"></div> Đang tải...
+          </div>
+
+          <div v-else-if="myCoupons.length === 0" class="coup-empty">
+            <div class="coup-empty-icon">🎫</div>
+            <p>Bạn chưa lưu mã nào.</p>
+            <router-link to="/my-coupons" class="btn-goto-promo filled">Xem khuyến mãi ngay →</router-link>
+          </div>
+
+          <div v-else class="coup-list">
+            <div v-for="c in myCoupons" :key="c.coupon_code" :class="['coup-item', c.status]">
+              <div class="coup-left">
+                <div class="coup-discount">{{ c.discount_display }}</div>
+                <div class="coup-min" v-if="c.minordervalue > 0">
+                  Đơn từ {{ Number(c.minordervalue).toLocaleString('vi-VN') }}₫
+                </div>
+              </div>
+              <div class="coup-mid">
+                <div class="coup-code">{{ c.coupon_code }}</div>
+                <div class="coup-desc">{{ c.description }}</div>
+                <div class="coup-expire" v-if="c.expires_at">
+                  HSD: {{ new Date(c.expires_at).toLocaleDateString('vi-VN') }}
+                </div>
+              </div>
+              <div class="coup-right">
+                <span :class="['coup-status', c.status]">
+                  {{ c.status === 'active' ? '✓ Còn dùng được' : c.status === 'used' ? '✗ Đã dùng' : '✗ Hết hạn' }}
+                </span>
+                <router-link v-if="c.status === 'active'" :to="{ name: 'checkout', query: { coupon: c.coupon_code } }"
+                  class="btn-use-now">
+                  Dùng ngay
+                </router-link>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- Đổi mật khẩu -->
@@ -114,7 +160,8 @@
             <div class="form-group full">
               <label>Xác nhận mật khẩu mới <span class="required">*</span></label>
               <div class="input-pw-wrap">
-                <input v-model="pwForm.confirm" :type="showPw.confirm ? 'text' : 'password'" placeholder="Nhập lại mật khẩu mới" />
+                <input v-model="pwForm.confirm" :type="showPw.confirm ? 'text' : 'password'"
+                  placeholder="Nhập lại mật khẩu mới" />
                 <button type="button" class="toggle-pw" @click="showPw.confirm = !showPw.confirm">
                   {{ showPw.confirm ? 'ẩn' : 'hiện' }}
                 </button>
@@ -158,7 +205,7 @@
         </section>
 
         <!-- Đơn hàng của tôi -->
-        <section v-if="activeTab === 'orders'" class="section-card">
+        <!-- <section v-if="activeTab === 'orders'" class="section-card">
           <div class="section-head">
             <h2>Đơn hàng của tôi</h2>
           </div>
@@ -172,18 +219,23 @@
           <button class="btn-view-all" @click="$router.push('/order-history')">
             Xem tất cả đơn hàng →
           </button>
-        </section>
+        </section> -->
       </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import api from '@/api/index'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/user/stores/authStore'
 
 const activeTab = ref('info')
 const editing = ref(false)
 const showAddAddress = ref(false)
+const router = useRouter()
+const authStore = useAuthStore()
 
 const user = ref({
   fullName: 'Nguyễn Văn An',
@@ -194,7 +246,8 @@ const user = ref({
 
 const navItems = [
   { key: 'info', icon: '', label: 'Thông tin cá nhân' },
-  { key: 'orders', icon: '', label: 'Đơn hàng của tôi' },
+  { key: 'coupons', icon: '', label: 'Mã giảm giá của tôi' },
+  // { key: 'orders', icon: '', label: 'Đơn hàng của tôi' },
   { key: 'address', icon: '', label: 'Địa chỉ giao hàng' },
   { key: 'password', icon: '', label: 'Đổi mật khẩu' },
 ]
@@ -267,6 +320,37 @@ const deleteAddress = (id: number) => {
 const setDefault = (id: number) => {
   addresses.value.forEach(a => a.isDefault = a.id === id)
 }
+
+const myCoupons = ref<any[]>([])
+const loadingCoup = ref(false)
+
+async function fetchMyCoupons() {
+  loadingCoup.value = true
+  try {
+    const res = await api.get('/user/my-coupons')
+    myCoupons.value = res.data
+  } catch {
+    myCoupons.value = []
+  } finally {
+    loadingCoup.value = false
+  }
+}
+
+watch(activeTab, (val) => {
+  if (val === 'coupons') fetchMyCoupons()
+})
+
+onMounted(() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('tab') === 'coupons') {
+    activeTab.value = 'coupons'
+  }
+})
+
+async function handleLogout() {
+  await authStore.logout()
+  router.push('/')
+}
 </script>
 
 <style scoped>
@@ -278,9 +362,20 @@ const setDefault = (id: number) => {
   color: #222;
 }
 
-.breadcrumb { font-size: 13px; color: #888; margin-bottom: 16px; }
-.breadcrumb .sep { margin: 0 6px; }
-.breadcrumb .active { color: #2e7d32; font-weight: 500; }
+.breadcrumb {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.breadcrumb .sep {
+  margin: 0 6px;
+}
+
+.breadcrumb .active {
+  color: #2e7d32;
+  font-weight: 500;
+}
 
 .profile-layout {
   display: grid;
@@ -298,34 +393,60 @@ const setDefault = (id: number) => {
   position: sticky;
   top: 80px;
 }
+
 .user-card {
   background: linear-gradient(135deg, #2e7d32, #43a047);
   color: #fff;
   padding: 24px 16px;
   text-align: center;
 }
-.avatar-wrap { position: relative; display: inline-block; margin-bottom: 12px; }
+
+.avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
 .avatar {
-  width: 80px; height: 80px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid rgba(255,255,255,.4);
+  border: 3px solid rgba(255, 255, 255, .4);
 }
+
 .avatar-edit-btn {
   position: absolute;
-  bottom: 0; right: 0;
+  bottom: 0;
+  right: 0;
   background: #fff;
   border-radius: 50%;
-  width: 26px; height: 26px;
-  display: flex; align-items: center; justify-content: center;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
 }
-.user-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
-.user-card p { font-size: 12px; opacity: .8; margin: 0; }
 
-.side-nav { padding: 8px 0; }
+.user-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.user-card p {
+  font-size: 12px;
+  opacity: .8;
+  margin: 0;
+}
+
+.side-nav {
+  padding: 8px 0;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -341,12 +462,29 @@ const setDefault = (id: number) => {
   transition: all .2s;
   border-left: 3px solid transparent;
 }
-.nav-item:hover { background: #f1f8f2; color: #2e7d32; }
-.nav-item.active { background: #e8f5e9; color: #2e7d32; font-weight: 600; border-left-color: #2e7d32; }
-.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.nav-item:hover {
+  background: #f1f8f2;
+  color: #2e7d32;
+}
+
+.nav-item.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 600;
+  border-left-color: #2e7d32;
+}
+
+.nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
 
 /* Main */
-.main-content { min-width: 0; }
+.main-content {
+  min-width: 0;
+}
 
 .section-card {
   background: #fff;
@@ -354,6 +492,7 @@ const setDefault = (id: number) => {
   border-radius: 8px;
   padding: 24px;
 }
+
 .section-head {
   display: flex;
   justify-content: space-between;
@@ -362,7 +501,13 @@ const setDefault = (id: number) => {
   padding-bottom: 14px;
   border-bottom: 2px solid #e8f5e9;
 }
-.section-head h2 { font-size: 17px; font-weight: 700; color: #1b5e20; margin: 0; }
+
+.section-head h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1b5e20;
+  margin: 0;
+}
 
 .btn-edit {
   padding: 7px 16px;
@@ -375,7 +520,12 @@ const setDefault = (id: number) => {
   font-weight: 500;
   transition: all .2s;
 }
-.btn-edit:hover { background: #2e7d32; color: #fff; }
+
+.btn-edit:hover {
+  background: #2e7d32;
+  color: #fff;
+}
+
 .btn-add {
   padding: 7px 16px;
   background: #2e7d32;
@@ -387,7 +537,10 @@ const setDefault = (id: number) => {
   font-weight: 500;
   transition: background .2s;
 }
-.btn-add:hover { background: #1b5e20; }
+
+.btn-add:hover {
+  background: #1b5e20;
+}
 
 /* Form */
 .form-grid {
@@ -395,15 +548,26 @@ const setDefault = (id: number) => {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group.full { grid-column: 1 / -1; }
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
+}
 
 .form-group label {
   font-size: 13px;
   font-weight: 600;
   color: #444;
 }
-.required { color: #e53935; }
+
+.required {
+  color: #e53935;
+}
 
 .form-group input:not([type="radio"]) {
   padding: 10px 13px;
@@ -416,11 +580,28 @@ const setDefault = (id: number) => {
   background: #fff;
   font-family: inherit;
 }
-.form-group input:not([type="radio"]):focus { border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
-.form-group input:disabled { background: #f9f9f9; color: #999; cursor: not-allowed; }
-.disabled-field { background: #f5f5f5 !important; }
 
-.radio-group { display: flex; gap: 20px; padding-top: 4px; }
+.form-group input:not([type="radio"]):focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, .1);
+}
+
+.form-group input:disabled {
+  background: #f9f9f9;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.disabled-field {
+  background: #f5f5f5 !important;
+}
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+  padding-top: 4px;
+}
+
 .radio-label {
   display: flex;
   align-items: center;
@@ -429,9 +610,18 @@ const setDefault = (id: number) => {
   color: #444;
   cursor: pointer;
 }
-.radio-label input[type="radio"] { accent-color: #2e7d32; width: 16px; height: 16px; }
 
-.form-actions { display: flex; justify-content: flex-start; }
+.radio-label input[type="radio"] {
+  accent-color: #2e7d32;
+  width: 16px;
+  height: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .btn-save {
   padding: 11px 28px;
   background: #2e7d32;
@@ -443,12 +633,17 @@ const setDefault = (id: number) => {
   cursor: pointer;
   transition: background .2s, transform .1s;
 }
-.btn-save:hover { background: #1b5e20; transform: translateY(-1px); }
+
+.btn-save:hover {
+  background: #1b5e20;
+  transform: translateY(-1px);
+}
 
 /* Password */
 .input-pw-wrap {
   position: relative;
 }
+
 .input-pw-wrap input {
   width: 100%;
   padding: 10px 42px 10px 13px;
@@ -460,39 +655,82 @@ const setDefault = (id: number) => {
   box-sizing: border-box;
   font-family: inherit;
 }
-.input-pw-wrap input:focus { border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
+
+.input-pw-wrap input:focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, .1);
+}
+
 .toggle-pw {
   position: absolute;
-  right: 10px; top: 50%;
+  right: 10px;
+  top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
   font-size: 16px;
 }
-.pw-strength { margin-top: 8px; }
+
+.pw-strength {
+  margin-top: 8px;
+}
+
 .strength-bar {
   height: 4px;
   background: #eee;
   border-radius: 2px;
   margin-bottom: 4px;
 }
+
 .strength-fill {
   height: 100%;
   border-radius: 2px;
   transition: width .3s;
 }
-.strength-fill.weak { background: #e53935; }
-.strength-fill.medium { background: #f57c00; }
-.strength-fill.strong { background: #2e7d32; }
-.strength-label { font-size: 12px; font-weight: 600; }
-.strength-label.weak { color: #e53935; }
-.strength-label.medium { color: #f57c00; }
-.strength-label.strong { color: #2e7d32; }
-.pw-mismatch { font-size: 12px; color: #e53935; margin-top: 5px; }
+
+.strength-fill.weak {
+  background: #e53935;
+}
+
+.strength-fill.medium {
+  background: #f57c00;
+}
+
+.strength-fill.strong {
+  background: #2e7d32;
+}
+
+.strength-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.strength-label.weak {
+  color: #e53935;
+}
+
+.strength-label.medium {
+  color: #f57c00;
+}
+
+.strength-label.strong {
+  color: #2e7d32;
+}
+
+.pw-mismatch {
+  font-size: 12px;
+  color: #e53935;
+  margin-top: 5px;
+}
 
 /* Address */
-.address-list { display: flex; flex-direction: column; gap: 12px; }
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .address-card {
   border: 1px solid #e0e0e0;
   border-radius: 6px;
@@ -503,11 +741,33 @@ const setDefault = (id: number) => {
   gap: 12px;
   transition: border-color .2s;
 }
-.address-card:hover { border-color: #2e7d32; }
-.address-body { flex: 1; }
-.address-name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap; }
-.addr-name { font-weight: 700; font-size: 14px; }
-.addr-phone { font-size: 13px; color: #555; }
+
+.address-card:hover {
+  border-color: #2e7d32;
+}
+
+.address-body {
+  flex: 1;
+}
+
+.address-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.addr-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.addr-phone {
+  font-size: 13px;
+  color: #555;
+}
+
 .default-badge {
   background: #e8f5e9;
   color: #2e7d32;
@@ -517,9 +777,21 @@ const setDefault = (id: number) => {
   border-radius: 10px;
   border: 1px solid #a5d6a7;
 }
-.addr-detail { font-size: 13px; color: #666; }
-.address-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.btn-addr-edit, .btn-addr-delete, .btn-addr-default {
+
+.addr-detail {
+  font-size: 13px;
+  color: #666;
+}
+
+.address-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-addr-edit,
+.btn-addr-delete,
+.btn-addr-default {
   padding: 5px 10px;
   border-radius: 4px;
   font-size: 12px;
@@ -528,12 +800,39 @@ const setDefault = (id: number) => {
   transition: all .15s;
   white-space: nowrap;
 }
-.btn-addr-edit { border-color: #2e7d32; color: #2e7d32; background: #fff; }
-.btn-addr-edit:hover { background: #2e7d32; color: #fff; }
-.btn-addr-delete { border-color: #e53935; color: #e53935; background: #fff; }
-.btn-addr-delete:hover { background: #e53935; color: #fff; }
-.btn-addr-default { border-color: #888; color: #555; background: #fff; }
-.btn-addr-default:hover { border-color: #2e7d32; color: #2e7d32; }
+
+.btn-addr-edit {
+  border-color: #2e7d32;
+  color: #2e7d32;
+  background: #fff;
+}
+
+.btn-addr-edit:hover {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.btn-addr-delete {
+  border-color: #e53935;
+  color: #e53935;
+  background: #fff;
+}
+
+.btn-addr-delete:hover {
+  background: #e53935;
+  color: #fff;
+}
+
+.btn-addr-default {
+  border-color: #888;
+  color: #555;
+  background: #fff;
+}
+
+.btn-addr-default:hover {
+  border-color: #2e7d32;
+  color: #2e7d32;
+}
 
 /* Order stats */
 .quick-order-stats {
@@ -542,6 +841,7 @@ const setDefault = (id: number) => {
   gap: 12px;
   margin-bottom: 20px;
 }
+
 .stat-card {
   display: flex;
   flex-direction: column;
@@ -553,10 +853,29 @@ const setDefault = (id: number) => {
   transition: all .2s;
   text-align: center;
 }
-.stat-card:hover { border-color: #2e7d32; background: #f1f8f2; transform: translateY(-2px); }
-.stat-icon { font-size: 26px; margin-bottom: 8px; }
-.stat-count { font-size: 24px; font-weight: 800; color: #2e7d32; }
-.stat-label { font-size: 12px; color: #777; margin-top: 3px; }
+
+.stat-card:hover {
+  border-color: #2e7d32;
+  background: #f1f8f2;
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.stat-count {
+  font-size: 24px;
+  font-weight: 800;
+  color: #2e7d32;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #777;
+  margin-top: 3px;
+}
 
 .btn-view-all {
   display: block;
@@ -571,12 +890,202 @@ const setDefault = (id: number) => {
   cursor: pointer;
   transition: all .2s;
 }
-.btn-view-all:hover { background: #2e7d32; color: #fff; }
+
+.btn-view-all:hover {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.btn-goto-promo {
+  padding: 7px 16px;
+  border: 1.5px solid #2e7d32;
+  border-radius: 20px;
+  color: #2e7d32;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all .2s;
+}
+
+.btn-goto-promo:hover,
+.btn-goto-promo.filled {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.btn-goto-promo.filled {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 24px;
+}
+
+.coup-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  color: #888;
+  font-size: 14px;
+}
+
+.mini-spin {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e8f5e9;
+  border-top-color: #2e7d32;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+.coup-empty {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+}
+
+.coup-empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.coup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.coup-item {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e8f5e9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.coup-item.expired,
+.coup-item.used {
+  opacity: .6;
+}
+
+.coup-left {
+  background: linear-gradient(160deg, #2e7d32, #1b5e20);
+  color: #fff;
+  padding: 14px;
+  min-width: 110px;
+  text-align: center;
+}
+
+.coup-item.expired .coup-left,
+.coup-item.used .coup-left {
+  background: #9e9e9e;
+}
+
+.coup-discount {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.coup-min {
+  font-size: 9px;
+  opacity: .85;
+  margin-top: 4px;
+}
+
+.coup-mid {
+  flex: 1;
+  padding: 12px 14px;
+  border-left: 1px dashed #e0e0e0;
+  border-right: 1px dashed #e0e0e0;
+}
+
+.coup-code {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1b5e20;
+  font-family: monospace;
+  letter-spacing: 1.5px;
+}
+
+.coup-item.expired .coup-code,
+.coup-item.used .coup-code {
+  color: #9e9e9e;
+}
+
+.coup-desc {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.coup-expire {
+  font-size: 11px;
+  color: #e53935;
+  margin-top: 4px;
+}
+
+.coup-right {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+}
+
+.coup-status {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.coup-status.active {
+  color: #2e7d32;
+}
+
+.coup-status.expired,
+.coup-status.used {
+  color: #9e9e9e;
+}
+
+.btn-use-now {
+  padding: 6px 14px;
+  background: #2e7d32;
+  color: #fff;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.btn-use-now:hover {
+  background: #1b5e20;
+}
+
+.nav-logout {
+  color: #e53935;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 4px;
+}
+.nav-logout:hover {
+  background: #fef2f2;
+  color: #c62828;
+}
 
 @media (max-width: 768px) {
-  .profile-layout { grid-template-columns: 1fr; }
-  .sidebar { position: static; }
-  .form-grid { grid-template-columns: 1fr; }
-  .quick-order-stats { grid-template-columns: repeat(2, 1fr); }
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-order-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

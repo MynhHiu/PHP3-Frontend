@@ -1610,7 +1610,8 @@ watch(allImages, (imgs) => {
 .pd-toast {
   position: fixed;
   bottom: 28px;
-  right: 28px;
+  left: 28px;
+  right: auto;
   padding: 14px 22px;
   border-radius: 10px;
   font-size: 14px;

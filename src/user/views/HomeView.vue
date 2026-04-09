@@ -1251,8 +1251,8 @@ onUnmounted(() => {
 
 /* Toast */
 .home-toast {
-  position: fixed; bottom: 32px; left: 50%;
-  transform: translateX(-50%);
+  position: fixed; bottom: 32px; left: 28px; right: auto;
+  transform: none;
   z-index: 9999;
   padding: 13px 26px;
   border-radius: 50px;

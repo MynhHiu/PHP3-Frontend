@@ -14,7 +14,10 @@
             <img :src="avatarSrc" alt="avatar" class="avatar" />
             <label class="avatar-edit-btn" title="Thay ảnh đại diện">
               <input type="file" accept="image/*" hidden @change="handleAvatarChange" />
-              📷
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
             </label>
           </div>
           <h3>{{ authStore.user?.fullname || '—' }}</h3>
@@ -29,7 +32,7 @@
           </button>
 
           <button class="nav-item nav-logout" @click="handleLogout">
-            <span class="nav-icon">🚪</span>
+            <span class="nav-icon"></span>
             Đăng xuất
           </button>
         </nav>
@@ -58,7 +61,7 @@
         ════════════════════════════════════════ -->
         <section v-if="activeTab === 'info'" class="section-card">
           <div class="section-head">
-            <h2>👤 Thông tin cá nhân</h2>
+            <h2>Thông tin cá nhân</h2>
             <button class="btn-edit" @click="toggleEdit">
               {{ editing ? 'Huỷ' : 'Chỉnh sửa' }}
             </button>
@@ -101,7 +104,7 @@
         ════════════════════════════════════════ -->
         <section v-if="activeTab === 'coupons'" class="section-card">
           <div class="section-head">
-            <h2>🎫 Mã giảm giá của tôi</h2>
+            <h2>Mã giảm giá của tôi</h2>
             <router-link to="/my-coupons" class="btn-goto-promo">+ Lấy thêm mã</router-link>
           </div>
 
@@ -110,7 +113,7 @@
           </div>
 
           <div v-else-if="myCoupons.length === 0" class="coup-empty">
-            <div class="coup-empty-icon">🎫</div>
+            <div class="coup-empty-icon"></div>
             <p>Bạn chưa lưu mã nào.</p>
             <router-link to="/my-coupons" class="btn-goto-promo filled">Xem khuyến mãi ngay →</router-link>
           </div>
@@ -146,7 +149,7 @@
         ════════════════════════════════════════ -->
         <section v-if="activeTab === 'address'" class="section-card">
           <div class="section-head">
-            <h2>📍 Địa chỉ giao hàng</h2>
+            <h2>Địa chỉ giao hàng</h2>
             <button class="btn-add" @click="openAddressModal()">+ Thêm địa chỉ</button>
           </div>
 
@@ -155,7 +158,7 @@
           </div>
 
           <div v-else-if="addresses.length === 0" class="coup-empty">
-            <div class="coup-empty-icon">📭</div>
+            <div class="coup-empty-icon"></div>
             <p>Bạn chưa có địa chỉ giao hàng nào.</p>
             <button class="btn-add mt-12" @click="openAddressModal()">+ Thêm địa chỉ đầu tiên</button>
           </div>
@@ -188,11 +191,11 @@
         ════════════════════════════════════════ -->
         <section v-if="activeTab === 'password'" class="section-card">
           <div class="section-head">
-            <h2>🔒 Đổi mật khẩu</h2>
+            <h2>Đổi mật khẩu</h2>
           </div>
 
           <div v-if="isGoogleAccount" class="google-notice">
-            <span>🔗</span>
+            <span></span>
             <p>Tài khoản của bạn đăng nhập qua Google. Bạn không thể đổi mật khẩu tại đây.</p>
           </div>
 
@@ -366,10 +369,10 @@ const authStore = useAuthStore()
 
 const activeTab = ref('info')
 const navItems = [
-  { key: 'info',     icon: '👤', label: 'Thông tin cá nhân' },
-  { key: 'coupons',  icon: '🎫', label: 'Mã giảm giá của tôi' },
-  { key: 'address',  icon: '📍', label: 'Địa chỉ giao hàng' },
-  { key: 'password', icon: '🔒', label: 'Đổi mật khẩu' },
+  { key: 'info',     icon: '', label: 'Thông tin cá nhân' },
+  { key: 'coupons',  icon: '', label: 'Mã giảm giá của tôi' },
+  { key: 'address',  icon: '', label: 'Địa chỉ giao hàng' },
+  { key: 'password', icon: '', label: 'Đổi mật khẩu' },
 ]
 
 // ── Toast ─────────────────────────────────────────────────────────────────
@@ -720,10 +723,12 @@ watch(activeTab, (val) => {
 .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,.4); }
 .avatar-edit-btn {
   position: absolute; bottom: 0; right: 0;
-  background: #fff; border-radius: 50%; width: 26px; height: 26px;
+  background: #fff; border-radius: 50%; width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  border: 2px solid #e8f5e9; transition: background .2s, transform .15s;
 }
+.avatar-edit-btn:hover { background: #e8f5e9; transform: scale(1.1); }
 .user-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
 .user-card p  { font-size: 12px; opacity: .8; margin: 0; word-break: break-all; }
 

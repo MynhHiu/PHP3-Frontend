@@ -9,7 +9,7 @@
 
     <!-- Tiêu đề đơn giản -->
     <div class="promo-header">
-      <h1>🏷️ Khuyến mãi hôm nay</h1>
+      <h1>Khuyến mãi hôm nay</h1>
       <p>Lưu mã ngay — dùng khi thanh toán, tiết kiệm thật nhiều!</p>
     </div>
 
@@ -17,7 +17,7 @@
 
       <!-- Chưa đăng nhập -->
       <div v-if="!authStore.isLoggedIn" class="login-notice">
-        💡 <router-link to="/login">Đăng nhập</router-link> để lưu mã và dùng khi thanh toán!
+        <router-link to="/login">Đăng nhập</router-link> để lưu mã và dùng khi thanh toán!
       </div>
 
       <!-- Loading -->
@@ -28,7 +28,7 @@
 
       <!-- Không có mã nào -->
       <div v-else-if="allCoupons.length === 0" class="empty">
-        <div class="empty-icon">🎫</div>
+        <div class="empty-icon"></div>
         <p>Hiện chưa có khuyến mãi nào.</p>
       </div>
 
@@ -74,8 +74,8 @@
               :disabled="savedCodes.has(c.coupon_code) || savingCode === c.coupon_code"
               @click="saveCoupon(c.coupon_code)"
             >
-              <span v-if="savingCode === c.coupon_code">⏳ Đang lưu...</span>
-              <span v-else-if="savedCodes.has(c.coupon_code)">✓ Đã lưu</span>
+              <span v-if="savingCode === c.coupon_code">Đang lưu...</span>
+              <span v-else-if="savedCodes.has(c.coupon_code)">Đã lưu</span>
               <span v-else>+ Lưu mã</span>
             </button>
             <router-link v-else to="/login" class="btn-save">

@@ -205,7 +205,7 @@
 
         <!-- Search result banner -->
         <div v-if="searchKeyword" class="search-result-bar">
-          <span class="search-result-icon">🔍</span>
+          <span class="search-result-icon"></span>
           <span>Kết quả tìm kiếm cho <strong>"{{ searchKeyword }}"</strong>: <em>{{ totalDisplay }} sản phẩm</em></span>
           <button class="search-clear-btn" @click="clearAllFilters">✕ Xoá tìm kiếm</button>
         </div>
@@ -383,11 +383,11 @@ let bannerTimer: ReturnType<typeof setInterval>
 
 /* ── Static data ─────────────────────────────────────────────────── */
 const trustItems = [
-  { ico: '⛟', title: 'Giao hàng nhanh', sub: 'Nội thành trong ngày' },
-  { ico: '🛡', title: 'Bảo hành chính hãng', sub: 'Cam kết 12–24 tháng' },
+  { ico: '', title: 'Giao hàng nhanh', sub: 'Nội thành trong ngày' },
+  { ico: '', title: 'Bảo hành chính hãng', sub: 'Cam kết 12–24 tháng' },
   { ico: '↺', title: 'Đổi trả dễ dàng', sub: 'Trong vòng 30 ngày' },
-  { ico: '☏', title: 'Hỗ trợ 24/7', sub: 'Tư vấn tận tâm' },
-  { ico: '💳︎', title: 'Thanh toán linh hoạt', sub: 'ATM · Momo · COD' },
+  { ico: '', title: 'Hỗ trợ 24/7', sub: 'Tư vấn tận tâm' },
+  { ico: '', title: 'Thanh toán linh hoạt', sub: 'ATM · Momo · COD' },
 ]
 
 const priceRanges = [

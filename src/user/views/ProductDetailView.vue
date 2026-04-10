@@ -18,7 +18,7 @@
 
     <!-- ── ERROR ──────────────────────────────────────────────── -->
     <div v-else-if="error" class="pd-error">
-      <div class="pd-error-icon">⚠</div>
+      <div class="pd-error-icon"></div>
       <h3>Không tìm thấy sản phẩm</h3>
       <p>{{ error }}</p>
       <router-link to="/" class="pd-back-btn">← Quay về trang chủ</router-link>
@@ -53,7 +53,7 @@
         <!-- Trust badges -->
         <div class="pd-trust-row">
           <div class="pd-trust-item">
-            <span class="pd-trust-ico">🛡</span>
+            <span class="pd-trust-ico"></span>
             <span>Bảo hành 24 tháng</span>
           </div>
           <div class="pd-trust-item">
@@ -61,7 +61,7 @@
             <span>Đổi trả 30 ngày</span>
           </div>
           <div class="pd-trust-item">
-            <span class="pd-trust-ico">⛟</span>
+            <span class="pd-trust-ico"></span>
             <span>Giao hàng nhanh</span>
           </div>
         </div>
@@ -552,7 +552,7 @@ async function handleBuyNow() {
 function toggleWishlist() {
   isWishlisted.value = !isWishlisted.value
   showToast(
-    isWishlisted.value ? '❤ Đã thêm vào danh sách yêu thích!' : 'Đã xóa khỏi danh sách yêu thích',
+    isWishlisted.value ? 'Đã thêm vào danh sách yêu thích!' : 'Đã xóa khỏi danh sách yêu thích',
     isWishlisted.value ? 'success' : 'warning'
   )
 }

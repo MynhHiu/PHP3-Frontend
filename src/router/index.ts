@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/user/stores/authStore'
 
+
 const AdminLayout = () => import('@/admin/layouts/AdminLayout.vue')
 const DashboardView = () => import('@/admin/views/DashboardView.vue')
 const ProductList = () => import('@/admin/views/ProductList.vue')
@@ -16,6 +17,7 @@ const OrderList = () => import('@/admin/views/OrderList.vue')
 const UserList = () => import('@/admin/views/UserList.vue')
 const CouponList = () => import('@/admin/views/CouponList.vue')
 const CouponForm = () => import('@/admin/views/CouponForm.vue')
+const ReviewList = () => import('@/admin/views/ReviewList.vue')
 
 const UserLayout = () => import('@/user/layouts/UserLayout.vue')
 const HomeView = () => import('@/user/views/HomeView.vue')
@@ -66,6 +68,7 @@ const router = createRouter({
         { path: 'variants/:id/edit', component: VariantCreate, name: 'variant-edit' },
         { path: 'variants/assign', component: VariantAssign, name: 'variant-assign' },
         { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager' },
+        { path: 'reviews', component: ReviewList, name: 'reviews' },
       ],
     },
 

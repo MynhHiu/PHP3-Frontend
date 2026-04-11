@@ -289,20 +289,34 @@
             </div>
           </div>
         </div>
-        <div class="pd-review-list">
-          <div v-for="(rv, i) in mockReviews" :key="i" class="pd-review-item">
+
+        <!-- Loading đánh giá -->
+        <div v-if="reviewStore.loading" class="pd-reviews-loading">Đang tải đánh giá...</div>
+
+        <!-- Chưa có đánh giá nào -->
+        <div v-else-if="reviewStore.reviews.length === 0" class="pd-no-reviews">
+          <span>💬</span>
+          <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+        </div>
+
+        <!-- Danh sách đánh giá đã duyệt -->
+        <div v-else class="pd-review-list">
+          <div v-for="rv in reviewStore.reviews" :key="rv.id" class="pd-review-item">
             <div class="pd-rv-header">
-              <div class="pd-rv-avatar">{{ rv.name[0] }}</div>
+              <div class="pd-rv-avatar">
+                <img v-if="rv.user_avatar" :src="rv.user_avatar" class="pd-rv-avatar-img" />
+                <span v-else>{{ (rv.user_name || 'K')[0].toUpperCase() }}</span>
+              </div>
               <div class="pd-rv-meta">
-                <strong class="pd-rv-name">{{ rv.name }}</strong>
+                <strong class="pd-rv-name">{{ rv.user_name || 'Khách hàng' }}</strong>
                 <div class="pd-rv-stars">
                   <span v-for="s in 5" :key="s" :class="['pd-rv-star', s <= rv.rating ? 'filled' : '']">★</span>
                 </div>
               </div>
-              <span class="pd-rv-date">{{ rv.date }}</span>
+              <span class="pd-rv-date">{{ new Date(rv.created_at).toLocaleDateString('vi-VN') }}</span>
             </div>
-            <p class="pd-rv-text">{{ rv.text }}</p>
-            <div v-if="rv.verified" class="pd-rv-verified">✓ Đã mua sản phẩm</div>
+            <p class="pd-rv-text">{{ rv.comment }}</p>
+            <div class="pd-rv-verified">✓ Đã mua sản phẩm</div>
           </div>
         </div>
       </div>
@@ -344,12 +358,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProductUserStore, type ProductSku } from '@/user/stores/productUserStore'
 import { useCartStore } from '@/user/stores/cartStore'
 import { useAuthStore } from '@/user/stores/authStore'
+import { useReviewStore } from '@/user/stores/reviewStore'
 
 const route = useRoute()
 const router = useRouter()
 const productStore = useProductUserStore()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
+const reviewStore = useReviewStore()
 
 const PLACEHOLDER = 'https://placehold.co/500x500/e8f5e9/2d8c4e?text=SP'
 
@@ -445,42 +461,34 @@ const discountPercent = computed(() => {
   return Math.round(((ori - cur) / ori) * 100)
 })
 
-/* ── Rating / Review data (static) ─────────────────────────── */
-const rating = ref(4)
-const reviewCount = ref(128)
-const soldCount = ref(342)
+/* ── Rating / Review data (từ API thật) ─────────────────────── */
 const isWishlisted = ref(false)
 
-const ratingBars = computed(() => [
-  { star: 5, count: 72, percent: 56 },
-  { star: 4, count: 38, percent: 30 },
-  { star: 3, count: 12, percent: 9 },
-  { star: 2, count: 4, percent: 3 },
-  { star: 1, count: 2, percent: 2 },
-])
+const reviewCount = computed(() => reviewStore.reviews.length)
 
-const mockReviews = [
-  {
-    name: 'Nguyễn Minh Tuấn', rating: 5, date: '15/03/2025', verified: true,
-    text: 'Sản phẩm chất lượng tốt, giao hàng nhanh, đóng gói cẩn thận. Dùng được 1 tháng vẫn hoạt động tốt. Rất hài lòng!'
-  },
-  {
-    name: 'Trần Thị Lan', rating: 4, date: '08/03/2025', verified: true,
-    text: 'Hàng đúng mô tả, giá hợp lý. Shipper nhiệt tình. Sẽ ủng hộ shop lần sau.'
-  },
-  {
-    name: 'Lê Quốc Bảo', rating: 5, date: '01/03/2025', verified: false,
-    text: 'Tuyệt vời! Chất lượng vượt kỳ vọng. Hỗ trợ lắp đặt chuyên nghiệp, nhân viên thân thiện.'
-  },
-]
+const rating = computed(() => {
+  if (reviewStore.reviews.length === 0) return 0
+  const sum = reviewStore.reviews.reduce((acc, r) => acc + r.rating, 0)
+  return Math.round((sum / reviewStore.reviews.length) * 10) / 10
+})
+
+const ratingBars = computed(() => {
+  return [5, 4, 3, 2, 1].map(star => {
+    const count = reviewStore.reviews.filter(r => r.rating === star).length
+    const percent = reviewStore.reviews.length > 0
+      ? Math.round((count / reviewStore.reviews.length) * 100)
+      : 0
+    return { star, count, percent }
+  })
+})
 
 /* ── Tabs ───────────────────────────────────────────────────── */
 const activeTab = ref('desc')
-const tabs = [
+const tabs = computed(() => [
   { key: 'desc', label: 'Mô tả sản phẩm' },
   { key: 'specs', label: 'Thông số kỹ thuật' },
   { key: 'reviews', label: `Đánh giá (${reviewCount.value})` },
-]
+])
 
 const formattedDesc = computed(() =>
   product.value?.description
@@ -570,6 +578,8 @@ function handleShare() {
 async function loadProduct(id: number) {
   productStore.detail = null  // reset để hiện loading
   await productStore.fetchDetail(id)
+  // Tải đánh giá đã duyệt của sản phẩm
+  await reviewStore.fetchByProduct(id)
   if (product.value) {
     // Ảnh chính
     activeImage.value = product.value.image_url || ''
@@ -1517,6 +1527,36 @@ watch(allImages, (imgs) => {
   font-size: 11.5px;
   color: #16a34a;
   font-weight: 600;
+}
+
+.pd-rv-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.pd-reviews-loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}
+
+.pd-no-reviews {
+  text-align: center;
+  padding: 48px 20px;
+  color: #aaa;
+}
+
+.pd-no-reviews span {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.pd-no-reviews p {
+  font-size: 14px;
 }
 
 /* ─────────────────────────────────────────

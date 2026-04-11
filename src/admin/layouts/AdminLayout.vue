@@ -129,6 +129,13 @@
           </div>
         </router-link>
 
+        <router-link to="/admin/reviews" custom v-slot="{ isActive, navigate }">
+          <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']" :title="!open ? 'Đánh giá' : ''">
+            <IconStar class="nav-icon" />
+            <span v-if="open">Đánh giá</span>
+          </div>
+        </router-link>
+
         <template v-if="open"><p class="nav-section" style="margin-top:8px">Hệ thống</p></template>
         <div v-else class="nav-divider"></div>
 
@@ -204,6 +211,7 @@ const titles: Record<string, string> = {
   'coupons':          'Mã giảm giá',
   'coupon-create':    'Thêm mã giảm giá',
   'coupon-edit':      'Sửa mã giảm giá',
+  'reviews':          'Quản lý đánh giá',
 
   'variants':         'Danh sách biến thể',
   'variant-create':   'Tạo biến thể',    
@@ -244,6 +252,9 @@ const IconUsers   = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none
 const IconHome    = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
   h('path', { d: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' }),
   h('polyline', { points: '9 22 9 12 15 12 15 22' }),
+]) }
+const IconStar    = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('polygon', { points: '12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2' }),
 ]) }
 
 // Icon cho trang "Tạo biến thể" — dấu + trong ô

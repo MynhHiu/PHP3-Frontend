@@ -48,10 +48,21 @@
                   <p class="product-name">{{ product.name }}</p>
                   <p class="product-variant" v-if="product.variant">{{ product.variant }}</p>
                   <p class="product-unit-price">Đơn giá: {{ formatPrice(product.price) }}đ</p>
+                  <!-- Trạng thái đánh giá cho từng sản phẩm -->
+                  <div v-if="order.status === 'delivered'" class="review-status-tag">
+                    <span v-if="reviewedSkus.has(product.skuCode)" class="tag-reviewed">✓ Đã đánh giá</span>
+                    <span v-else class="tag-not-reviewed">Chưa đánh giá</span>
+                  </div>
                 </div>
                 <div class="product-right">
                   <p class="product-qty">x{{ product.qty }}</p>
                   <p class="product-subtotal">{{ formatPrice(product.price * product.qty) }}đ</p>
+                  <!-- Nút đánh giá từng sản phẩm -->
+                  <button
+                    v-if="order.status === 'delivered' && !reviewedSkus.has(product.skuCode)"
+                    class="btn-review-item"
+                    @click="openReviewModal(product)"
+                  >Đánh giá</button>
                 </div>
               </div>
             </div>
@@ -137,9 +148,9 @@
               @click="cancelOrder"
             >Huỷ đơn hàng</button>
             <button
-              v-if="order.status === 'delivered'"
+              v-if="order.status === 'delivered' && hasUnreviewedProducts"
               class="btn-action btn-review"
-              @click="reviewOrder"
+              @click="openReviewModal(order.products.find(p => !reviewedSkus.has(p.skuCode))!)"
             >Đánh giá sản phẩm</button>
             <button
               v-if="order.status === 'delivered' || order.status === 'cancelled'"
@@ -154,27 +165,139 @@
       </div>
     </template>
 
+    <!-- ── MODAL ĐÁNH GIÁ ──────────────────────────────────────────────────── -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-box">
+        <button class="modal-close" @click="closeModal">×</button>
+        <h3 class="modal-title">Đánh giá sản phẩm</h3>
+
+        <div class="modal-product-info" v-if="reviewTarget">
+          <img :src="reviewTarget.image" class="modal-product-img" />
+          <span class="modal-product-name">{{ reviewTarget.name }}</span>
+        </div>
+
+        <!-- Chọn sao -->
+        <div class="modal-section">
+          <label class="modal-label">Chất lượng sản phẩm</label>
+          <div class="star-picker">
+            <span
+              v-for="s in 5"
+              :key="s"
+              :class="['star', { active: s <= reviewForm.rating }]"
+              @click="reviewForm.rating = s"
+              @mouseover="hoverRating = s"
+              @mouseleave="hoverRating = 0"
+            >{{ s <= (hoverRating || reviewForm.rating) ? '★' : '☆' }}</span>
+            <span class="star-label">{{ starLabel(hoverRating || reviewForm.rating) }}</span>
+          </div>
+        </div>
+
+        <!-- Nội dung -->
+        <div class="modal-section">
+          <label class="modal-label">Nội dung đánh giá</label>
+          <textarea
+            v-model="reviewForm.comment"
+            class="modal-textarea"
+            rows="4"
+            placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
+          ></textarea>
+        </div>
+
+        <!-- Error -->
+        <p v-if="reviewStore.error" class="modal-error">{{ reviewStore.error }}</p>
+
+        <!-- Success -->
+        <div v-if="reviewStore.submitStatus === 'success'" class="modal-success">
+          <span>🎉</span> Cảm ơn bạn đã đánh giá! Đánh giá đang chờ duyệt.
+        </div>
+
+        <div class="modal-actions" v-if="reviewStore.submitStatus !== 'success'">
+          <button class="btn-modal-cancel" @click="closeModal">Huỷ</button>
+          <button
+            class="btn-modal-submit"
+            @click="submitReview"
+            :disabled="reviewStore.submitStatus === 'loading' || reviewForm.rating === 0"
+          >
+            {{ reviewStore.submitStatus === 'loading' ? 'Đang gửi...' : 'Gửi đánh giá' }}
+          </button>
+        </div>
+
+        <div class="modal-actions" v-else>
+          <button class="btn-modal-submit" @click="closeModal">Đóng</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrderStore } from '@/user/stores/orderStore'
 import { useCartStore } from '@/user/stores/cartStore'
+import { useReviewStore } from '@/user/stores/reviewStore'
 
-const route      = useRoute()
-const router     = useRouter()
-const orderStore = useOrderStore()
-const cartStore  = useCartStore()
+const route       = useRoute()
+const router      = useRouter()
+const orderStore  = useOrderStore()
+const cartStore   = useCartStore()
+const reviewStore = useReviewStore()
 
+// ── Review modal state ─────────────────────────────────────────────────────────
+const showModal   = ref(false)
+const hoverRating = ref(0)
+const reviewTarget = ref<{ name: string; image: string; skuCode: string } | null>(null)
+const reviewForm  = reactive({ rating: 0, comment: '' })
+
+const starLabel = (n: number) =>
+  ['', 'Rất tệ', 'Không hài lòng', 'Bình thường', 'Hài lòng', 'Rất hài lòng'][n] ?? ''
+
+function openReviewModal(product: any) {
+  reviewTarget.value = product
+  reviewForm.rating  = 0
+  reviewForm.comment = ''
+  reviewStore.resetSubmit()
+  showModal.value    = true
+}
+
+function closeModal() {
+  showModal.value = false
+  reviewStore.resetSubmit()
+}
+
+async function submitReview() {
+  if (!reviewTarget.value || reviewForm.rating === 0) return
+  await reviewStore.submitReview({
+    product_sku_code: reviewTarget.value.skuCode,
+    rating:           reviewForm.rating,
+    comment:          reviewForm.comment,
+  })
+  // Cập nhật danh sách đã review (reload myReviews đã được gọi trong store)
+}
+
+// Set các sku đã được đánh giá
+const reviewedSkus = computed(() => {
+  const set = new Set<string>()
+  reviewStore.myReviews.forEach(r => set.add(r.product_sku_code))
+  return set
+})
+
+const hasUnreviewedProducts = computed(() =>
+  order.value?.products.some((p: any) => !reviewedSkus.value.has(p.skuCode)) ?? false
+)
+
+// ── Order ──────────────────────────────────────────────────────────────────────
 const rawId = computed(() => {
   const param = String(route.params.id)
   const num = param.startsWith('ORD') ? Number(param.slice(3)) : Number(param)
   return num
 })
 
-onMounted(() => orderStore.fetchOrder(rawId.value))
+onMounted(async () => {
+  await orderStore.fetchOrder(rawId.value)
+  await reviewStore.fetchMyReviews()
+})
 
 const order = computed(() => {
   const o = orderStore.current
@@ -211,6 +334,7 @@ const order = computed(() => {
     },
     products: (o.items ?? o.order_details ?? []).map((d: any) => ({
       name:    d.product_name || d.product?.name  || d.product_sku_code,
+      skuCode: d.product_sku_code,
       variant: '',
       image:   d.product_image || d.product?.image_url || 'https://placehold.co/80x80/e8f5e9/2e7d32?text=SP',
       price:   d.price ?? d.product?.price ?? 0,
@@ -222,11 +346,11 @@ const order = computed(() => {
 const timeline = computed(() => {
   const status = order.value?.status ?? 'pending'
   const steps = [
-    { key: 'pending',    icon: '', label: 'Đặt hàng',  time: order.value?.createdAt   ?? null },
-    { key: 'confirmed',  icon: '', label: 'Xác nhận',  time: order.value?.confirmedAt ?? null },
-    { key: 'processing', icon: '', label: 'Đóng gói',  time: null },
-    { key: 'shipping',   icon: '', label: 'Đang giao', time: null },
-    { key: 'delivered',  icon: '', label: 'Đã giao',   time: order.value?.deliveredAt ?? null },
+    { key: 'pending',    icon: '🛒', label: 'Đặt hàng',  time: order.value?.createdAt   ?? null },
+    { key: 'confirmed',  icon: '✅', label: 'Xác nhận',  time: order.value?.confirmedAt ?? null },
+    { key: 'processing', icon: '📦', label: 'Đóng gói',  time: null },
+    { key: 'shipping',   icon: '🚚', label: 'Đang giao', time: null },
+    { key: 'delivered',  icon: '🏠', label: 'Đã giao',   time: order.value?.deliveredAt ?? null },
   ]
   const flow = ['pending', 'confirmed', 'processing', 'shipping', 'delivered']
   const currentIdx = flow.indexOf(status)
@@ -255,12 +379,10 @@ const cancelOrder = async () => {
   }
 }
 
-const reviewOrder = () => alert('Chức năng đánh giá đang phát triển')
-
 const rebuyOrder = async () => {
   if (!order.value) return
   for (const p of order.value.products) {
-    await cartStore.addToCart(p.name, p.qty, {
+    await cartStore.addToCart(p.skuCode, p.qty, {
       name:      p.name,
       image_url: p.image,
       price:     p.price,
@@ -316,9 +438,14 @@ const rebuyOrder = async () => {
 .product-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
 .product-variant { font-size: 12px; color: #888; margin-bottom: 4px; }
 .product-unit-price { font-size: 12px; color: #aaa; }
-.product-right { text-align: right; }
-.product-qty { font-size: 13px; color: #888; margin-bottom: 4px; }
+.review-status-tag { margin-top: 6px; }
+.tag-reviewed { font-size: 11px; color: #2e7d32; background: #e8f5e9; padding: 2px 8px; border-radius: 10px; }
+.tag-not-reviewed { font-size: 11px; color: #f57c00; background: #fff3e0; padding: 2px 8px; border-radius: 10px; }
+.product-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.product-qty { font-size: 13px; color: #888; }
 .product-subtotal { font-size: 15px; font-weight: 700; color: #e53935; }
+.btn-review-item { font-size: 12px; padding: 4px 10px; border-radius: 5px; border: 1.5px solid #f57c00; color: #f57c00; background: #fff; cursor: pointer; transition: all .2s; }
+.btn-review-item:hover { background: #f57c00; color: #fff; }
 .price-summary { border-top: 1px solid #f0f0f0; padding-top: 14px; }
 .price-row { display: flex; justify-content: space-between; font-size: 14px; padding: 5px 0; color: #555; }
 .discount-lbl { color: #2e7d32; }
@@ -345,6 +472,46 @@ const rebuyOrder = async () => {
 .btn-rebuy:hover { background: #1b5e20; }
 .btn-back { background: #fff; border-color: #ccc; color: #555; }
 .btn-back:hover { border-color: #2e7d32; color: #2e7d32; }
+
+/* ── Modal ──────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 999;
+}
+.modal-box {
+  background: #fff; border-radius: 12px; padding: 28px;
+  width: 90%; max-width: 480px; position: relative;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+}
+.modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; font-size: 24px; cursor: pointer; color: #888;
+}
+.modal-title { font-size: 18px; font-weight: 700; color: #1b5e20; margin: 0 0 16px; }
+.modal-product-info { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 8px; }
+.modal-product-img { width: 52px; height: 52px; object-fit: contain; border-radius: 6px; border: 1px solid #eee; }
+.modal-product-name { font-size: 14px; font-weight: 500; color: #333; }
+.modal-section { margin-bottom: 18px; }
+.modal-label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+.star-picker { display: flex; align-items: center; gap: 6px; }
+.star { font-size: 32px; cursor: pointer; color: #ddd; transition: color .15s; line-height: 1; }
+.star.active, .star:hover { color: #f5a623; }
+.star-label { font-size: 13px; color: #f5a623; font-weight: 600; margin-left: 6px; min-width: 100px; }
+.modal-textarea {
+  width: 100%; border: 1.5px solid #ddd; border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; resize: vertical;
+  font-family: inherit; transition: border-color .2s;
+  box-sizing: border-box;
+}
+.modal-textarea:focus { outline: none; border-color: #2e7d32; }
+.modal-error { color: #e53935; font-size: 13px; margin-bottom: 12px; }
+.modal-success { background: #e8f5e9; color: #2e7d32; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-modal-cancel { padding: 10px 20px; border-radius: 6px; border: 1.5px solid #ccc; background: #fff; color: #555; font-size: 14px; cursor: pointer; }
+.btn-modal-submit { padding: 10px 24px; border-radius: 6px; border: none; background: #2e7d32; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.btn-modal-submit:hover:not(:disabled) { background: #1b5e20; }
+.btn-modal-submit:disabled { background: #a5d6a7; cursor: not-allowed; }
+
 @media (max-width: 768px) {
   .detail-layout { grid-template-columns: 1fr; }
   .timeline { gap: 0; }

@@ -136,17 +136,42 @@ export const orderApi = {
   updateStatus: (id: number, status: string) =>
     api.patch(`/admin/orders/${id}/status`, { status }),
 }
- 
+
 // ── Orders (User) ─────────────────────────────────────────────────────────────
 export const userOrderApi = {
-  // GET /api/user/orders — danh sách đơn hàng của user đang đăng nhập
   getAll: () => api.get('/user/orders'),
- 
-  // GET /api/user/orders/{id} — chi tiết 1 đơn hàng
   getOne: (id: number) => api.get(`/user/orders/${id}`),
- 
-  // PATCH /api/user/orders/{id}/cancel — huỷ đơn (chỉ khi status = pending)
   cancel: (id: number) => api.patch(`/user/orders/${id}/cancel`),
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+export const reviewApi = {
+  // Public: lấy đánh giá đã duyệt của 1 sản phẩm
+  getByProduct: (productId: number) =>
+    api.get(`/reviews/product/${productId}`),
+
+  // User: gửi đánh giá
+  submit: (data: {
+    product_sku_code: string
+    rating: number
+    comment: string
+  }) => api.post('/user/reviews', data),
+
+  // User: xem đánh giá của mình
+  myReviews: () => api.get('/user/reviews'),
+
+  // Admin: danh sách tất cả đánh giá
+  adminGetAll: (params: { status?: string } = {}) =>
+    api.get('/admin/reviews', { params }),
+
+  // Admin: duyệt
+  approve: (id: number) => api.patch(`/admin/reviews/${id}/approve`),
+
+  // Admin: từ chối
+  reject:  (id: number) => api.patch(`/admin/reviews/${id}/reject`),
+
+  // Admin: xoá
+  delete:  (id: number) => api.delete(`/admin/reviews/${id}`),
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────

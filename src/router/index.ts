@@ -33,6 +33,10 @@ const VariantManager = () => import('@/admin/views/VariantManager.vue')
 
 const CouponsView = () => import('@/user/views/CouponsView.vue')
 
+// Shorthand meta helpers
+const adminMeta = { requiresAuth: true, requiresAdmin: true }
+const authMeta  = { requiresAuth: true }
+
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior() {
@@ -41,39 +45,42 @@ const router = createRouter({
   routes: [
 
     // ── ADMIN ─────────────────────────────────────────────────
+    // Chỉ dành cho role = 1 (admin). Nếu user thường vào sẽ bị chuyển về home.
     {
       path: '/admin',
       component: AdminLayout,
+      meta: adminMeta,
       children: [
-        { path: '', redirect: '/admin/dashboard' },
-        { path: 'dashboard', component: DashboardView, name: 'dashboard' },
-        { path: 'products', component: ProductList, name: 'products' },
-        { path: 'products/create', component: ProductForm, name: 'product-create' },
-        { path: 'products/:id/edit', component: ProductForm, name: 'product-edit' },
-        { path: 'categories', component: CategoryList, name: 'categories' },
-        { path: 'categories/create', component: CategoryForm, name: 'category-create' },
-        { path: 'categories/:id/edit', component: CategoryForm, name: 'category-edit' },
-        { path: 'brands', component: BrandList, name: 'brands' },
-        { path: 'brands/create', component: BrandForm, name: 'brand-create' },
-        { path: 'brands/:id/edit', component: BrandForm, name: 'brand-edit' },
-        { path: 'orders', component: OrderList, name: 'orders' },
-        { path: 'users', component: UserList, name: 'users' },
-        { path: 'coupons', component: CouponList, name: 'coupons' },
-        { path: 'coupons/create', component: CouponForm, name: 'coupon-create' },
-        { path: 'coupons/:code/edit', component: CouponForm, name: 'coupon-edit' },
-        { path: 'variants', component: VariantList, name: 'variants' },
-        { path: 'variants/create', component: VariantCreate, name: 'variant-create' },
-        { path: 'variants/:id/edit', component: VariantCreate, name: 'variant-edit' },
-        { path: 'variants/assign', component: VariantAssign, name: 'variant-assign' },
-        { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager' },
+        { path: '',                      redirect: '/admin/dashboard' },
+        { path: 'dashboard',             component: DashboardView,  name: 'dashboard',       meta: adminMeta },
+        { path: 'products',              component: ProductList,    name: 'products',         meta: adminMeta },
+        { path: 'products/create',       component: ProductForm,    name: 'product-create',   meta: adminMeta },
+        { path: 'products/:id/edit',     component: ProductForm,    name: 'product-edit',     meta: adminMeta },
+        { path: 'categories',            component: CategoryList,   name: 'categories',       meta: adminMeta },
+        { path: 'categories/create',     component: CategoryForm,   name: 'category-create',  meta: adminMeta },
+        { path: 'categories/:id/edit',   component: CategoryForm,   name: 'category-edit',    meta: adminMeta },
+        { path: 'brands',                component: BrandList,      name: 'brands',            meta: adminMeta },
+        { path: 'brands/create',         component: BrandForm,      name: 'brand-create',      meta: adminMeta },
+        { path: 'brands/:id/edit',       component: BrandForm,      name: 'brand-edit',        meta: adminMeta },
+        { path: 'orders',                component: OrderList,      name: 'orders',            meta: adminMeta },
+        { path: 'users',                 component: UserList,       name: 'users',             meta: adminMeta },
+        { path: 'coupons',               component: CouponList,     name: 'coupons',           meta: adminMeta },
+        { path: 'coupons/create',        component: CouponForm,     name: 'coupon-create',     meta: adminMeta },
+        { path: 'coupons/:code/edit',    component: CouponForm,     name: 'coupon-edit',       meta: adminMeta },
+        { path: 'variants',              component: VariantList,    name: 'variants',          meta: adminMeta },
+        { path: 'variants/create',       component: VariantCreate,  name: 'variant-create',    meta: adminMeta },
+        { path: 'variants/:id/edit',     component: VariantCreate,  name: 'variant-edit',      meta: adminMeta },
+        { path: 'variants/assign',       component: VariantAssign,  name: 'variant-assign',    meta: adminMeta },
+        { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager',   meta: adminMeta },
       ],
     },
 
     // ── AUTH ──────────────────────────────────────────────────
     {
       path: '/login',
-      component: LoginView,      // ← đổi từ AuthView
+      component: LoginView,
       name: 'login',
+      meta: { guestOnly: true },
       beforeEnter: (_to, _from, next) => {
         const token = localStorage.getItem('user_token')
         token ? next('/') : next()
@@ -81,8 +88,9 @@ const router = createRouter({
     },
     {
       path: '/register',
-      component: RegisterView,   // ← đổi từ AuthView
+      component: RegisterView,
       name: 'register',
+      meta: { guestOnly: true },
       beforeEnter: (_to, _from, next) => {
         const token = localStorage.getItem('user_token')
         token ? next('/') : next()
@@ -91,18 +99,20 @@ const router = createRouter({
     { path: '/auth/google/callback', name: 'google-callback', component: GoogleCallback },
 
     // ── USER / FRONTEND ───────────────────────────────────────
+    // Public routes (home, product, cart) không cần đăng nhập.
+    // Các trang nhạy cảm (checkout, profile, orders, coupons) yêu cầu đăng nhập.
     {
       path: '/',
       component: UserLayout,
       children: [
-        { path: '', component: HomeView, name: 'home' },
-        { path: 'products/:id', component: ProductDetailView, name: 'product-detail' },
-        { path: 'cart', component: CartView, name: 'cart' },
-        { path: 'checkout', component: CheckoutView, name: 'checkout' },
-        { path: 'profile', component: ProfileView, name: 'profile' },
-        { path: 'order-history', component: OrderHistoryView, name: 'order-history' },
-        { path: 'order/:id', component: OrderDetailView, name: 'order-detail' },
-        { path: 'coupons', component: CouponsView, name: 'my-coupons' },
+        { path: '',              component: HomeView,          name: 'home' },
+        { path: 'products/:id',  component: ProductDetailView, name: 'product-detail' },
+        { path: 'cart',          component: CartView,          name: 'cart' },
+        { path: 'checkout',      component: CheckoutView,      name: 'checkout',       meta: authMeta },
+        { path: 'profile',       component: ProfileView,       name: 'profile',        meta: authMeta },
+        { path: 'order-history', component: OrderHistoryView,  name: 'order-history',  meta: authMeta },
+        { path: 'order/:id',     component: OrderDetailView,   name: 'order-detail',   meta: authMeta },
+        { path: 'coupons',       component: CouponsView,       name: 'my-coupons',     meta: authMeta },
       ],
     },
 
@@ -114,20 +124,27 @@ const router = createRouter({
 // ─── Navigation Guard ─────────────────────────────────────────────────────────
 router.beforeEach((to: any, _from: any, next: any) => {
   const authStore = useAuthStore()
- 
+
+  // 1. Yêu cầu đăng nhập
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
- 
+
+  // 2. Yêu cầu quyền admin (role = 1)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    // User đã đăng nhập nhưng không phải admin → về trang chủ
     return next({ name: 'home' })
   }
- 
+
+  // 3. Đã đăng nhập thì không vào trang guest (login/register)
   if (to.meta.guestOnly && authStore.isLoggedIn) {
-    return next({ name: 'home' })
+    // Nếu là admin thì redirect về dashboard, user thường về home
+    return authStore.isAdmin
+      ? next({ path: '/admin/dashboard' })
+      : next({ name: 'home' })
   }
- 
+
   next()
 })
- 
+
 export default router

@@ -2,19 +2,10 @@
   <div class="auth-page">
     <!-- Nút về trang chủ -->
     <button class="btn-home" @click="router.push('/')">
-      <!-- <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
-        <polyline points="9 21 9 12 15 12 15 21"/>
-      </svg> -->
       Trang chủ
     </button>
 
     <div class="auth-card">
-
-      <!-- Logo -->
-      <!-- <div class="auth-logo">
-        <img :src="logoImage" alt="GreenElectric" class="logo" />
-      </div> -->
 
       <!-- Tabs -->
       <div class="auth-tabs">
@@ -41,9 +32,20 @@
           </div>
           <div class="form-group">
             <label>Số điện thoại</label>
-            <div class="input-wrap">
-              <input v-model="regForm.phone" type="tel" placeholder="0901234567" required :disabled="loading" />
+            <div class="input-wrap" :class="{ 'has-error': phoneTouched && !isPhoneValid }">
+              <input
+                v-model="regForm.phone"
+                type="tel"
+                placeholder="0901234567"
+                required
+                :disabled="loading"
+                maxlength="10"
+                @input="phoneTouched = true; regForm.phone = regForm.phone.replace(/\D/g, '')"
+              />
             </div>
+            <span v-if="phoneTouched && !isPhoneValid && regForm.phone" class="field-error">
+              Số điện thoại không hợp lệ
+            </span>
           </div>
         </div>
 
@@ -55,36 +57,68 @@
           </div>
         </div>
 
-        <!-- Địa chỉ -->
-        <div class="form-group">
-          <label>Địa chỉ <span class="optional">(tùy chọn)</span></label>
-          <div class="input-wrap">
-            <input v-model="regForm.address" type="text" placeholder="123 Đường ABC, TP. HCM" :disabled="loading" />
-          </div>
-        </div>
 
         <!-- Hàng 2: Mật khẩu + Xác nhận -->
         <div class="form-row">
           <div class="form-group">
             <label>Mật khẩu</label>
-            <div class="input-wrap">
-              <input v-model="regForm.password" :type="showPwd ? 'text' : 'password'" placeholder="Tối thiểu 6 ký tự"
-                required minlength="6" :disabled="loading" />
-              <!-- <button type="button" class="toggle-pwd" @click="showPwd = !showPwd">
-                {{ showPwd ? 'Ẩn' : 'Hiện' }}
-              </button> -->
+            <div class="input-wrap" :class="{ 'has-error': pwdTouched && !isPwdValid }">
+              <input
+                v-model="regForm.password"
+                :type="showPwd ? 'text' : 'password'"
+                placeholder="Tối thiểu 8 ký tự"
+                required
+                :disabled="loading"
+                @input="pwdTouched = true"
+              />
+              <button type="button" class="toggle-pwd" @click="showPwd = !showPwd" tabindex="-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
             </div>
+
+            <!-- Password Strength Bar -->
+            <div v-if="regForm.password" class="pwd-strength">
+              <div class="pwd-strength-track">
+                <div
+                  class="pwd-strength-fill"
+                  :class="pwdStrength.cls"
+                  :style="{ width: pwdStrength.pct + '%' }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Lỗi mật khẩu (chỉ hiện khi không hợp lệ) -->
+            <span v-if="pwdTouched && regForm.password && !isPwdValid" class="field-error">
+              Mật khẩu cần có ít nhất 8 ký tự, chữ hoa, chữ thường, số và ký tự đặc biệt.
+            </span>
           </div>
+
           <div class="form-group">
             <label>Xác nhận mật khẩu</label>
-            <div class="input-wrap">
-              <input v-model="regForm.confirmPassword" :type="showPwd ? 'text' : 'password'"
-                placeholder="Nhập lại mật khẩu" required :disabled="loading" />
+            <div class="input-wrap" :class="{ 'has-error': confirmTouched && !isConfirmMatch }">
+              <input
+                v-model="regForm.confirmPassword"
+                :type="showConfirm ? 'text' : 'password'"
+                placeholder="Nhập lại mật khẩu"
+                required
+                :disabled="loading"
+                @input="confirmTouched = true"
+              />
+              <button type="button" class="toggle-pwd" @click="showConfirm = !showConfirm" tabindex="-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
             </div>
+            <span v-if="confirmTouched && !isConfirmMatch && regForm.confirmPassword" class="field-error">
+              Mật khẩu không khớp
+            </span>
           </div>
         </div>
 
-        <button type="submit" class="btn-submit" :disabled="loading">
+        <button type="submit" class="btn-submit" :disabled="loading || !canSubmit">
           <span v-if="loading" class="spinner"></span>
           <span v-else>Tạo tài khoản</span>
         </button>
@@ -122,23 +156,66 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/user/stores/authStore'
-import logoImage from '@/assets/image/image-removebg-preview.png'
 
 const authStore = useAuthStore()
 const router = useRouter()
-const route = useRoute()
 
 const loading = ref(false)
 const showPwd = ref(false)
+const showConfirm = ref(false)
 const alertMsg = ref('')
 const alertType = ref<'error' | 'success'>('error')
+const phoneTouched = ref(false)
+const pwdTouched = ref(false)
+const confirmTouched = ref(false)
 
 const regForm = reactive({
   fullname: '', email: '', phone: '',
-  address: '', password: '', confirmPassword: '',
+  password: '', confirmPassword: '',
+})
+
+// ── Password validation checks ─────────────────────────────────────
+const checks = computed(() => ({
+  minLen: regForm.password.length >= 8,
+  upper:  /[A-Z]/.test(regForm.password),
+  lower:  /[a-z]/.test(regForm.password),
+  number: /[0-9]/.test(regForm.password),
+  symbol: /[^A-Za-z0-9]/.test(regForm.password),
+}))
+
+const isPwdValid = computed(() =>
+  checks.value.minLen &&
+  checks.value.upper &&
+  checks.value.lower &&
+  checks.value.number &&
+  checks.value.symbol
+)
+
+const isConfirmMatch = computed(() =>
+  regForm.password === regForm.confirmPassword
+)
+
+// ── Phone validation ──────────────────────────────────────────────────
+const isPhoneValid = computed(() =>
+  /^(03|05|07|08|09)\d{8}$/.test(regForm.phone)
+)
+
+// Chỉ cho submit khi điện thoại hợp lệ, mật khẩu hợp lệ và khớp
+const canSubmit = computed(() =>
+  isPhoneValid.value && isPwdValid.value && isConfirmMatch.value
+)
+
+// ── Password Strength ──────────────────────────────────────────────
+const pwdStrength = computed(() => {
+  const score = Object.values(checks.value).filter(Boolean).length
+  if (score <= 1) return { pct: 15, cls: 'weak',   label: 'Rất yếu' }
+  if (score === 2) return { pct: 35, cls: 'weak',   label: 'Yếu' }
+  if (score === 3) return { pct: 55, cls: 'fair',   label: 'Trung bình' }
+  if (score === 4) return { pct: 78, cls: 'good',   label: 'Tốt' }
+  return              { pct: 100, cls: 'strong', label: 'Rất mạnh' }
 })
 
 function showAlert(msg: string, type: 'error' | 'success' = 'error') {
@@ -147,9 +224,20 @@ function showAlert(msg: string, type: 'error' | 'success' = 'error') {
 }
 
 async function handleRegister() {
-  if (regForm.password !== regForm.confirmPassword) {
+  phoneTouched.value = true
+  pwdTouched.value = true
+  confirmTouched.value = true
+
+  if (!isPhoneValid.value) {
+    showAlert('Số điện thoại không hợp lệ.'); return
+  }
+  if (!isPwdValid.value) {
+    showAlert('Mật khẩu chưa đủ mạnh. Vui lòng kiểm tra các yêu cầu bên dưới.'); return
+  }
+  if (!isConfirmMatch.value) {
     showAlert('Mật khẩu xác nhận không khớp!'); return
   }
+
   loading.value = true; alertMsg.value = ''
   try {
     await authStore.register({
@@ -158,13 +246,19 @@ async function handleRegister() {
       phone: regForm.phone,
       password: regForm.password,
       password_confirmation: regForm.confirmPassword,
-      address: regForm.address || undefined,
     })
     await authStore.logout()
     showAlert('Đăng ký thành công! Vui lòng đăng nhập.', 'success')
     setTimeout(() => router.push('/login'), 1500)
   } catch (err: any) {
-    showAlert(err.userMessage || 'Đăng ký thất bại. Vui lòng thử lại.')
+    // Hiển thị lỗi từ backend (bao gồm cả lỗi password phức tạp)
+    const backendErrors = err.response?.data?.errors
+    if (backendErrors) {
+      const firstError = Object.values(backendErrors)[0] as string[]
+      showAlert(firstError[0] || 'Đăng ký thất bại.')
+    } else {
+      showAlert(err.response?.data?.message || err.userMessage || 'Đăng ký thất bại. Vui lòng thử lại.')
+    }
   } finally { loading.value = false }
 }
 
@@ -193,29 +287,9 @@ async function handleGoogleRegister() {
   pointer-events: none;
 }
 
-.c1 {
-  width: 420px;
-  height: 420px;
-  background: #2e7d32;
-  top: -120px;
-  right: -100px;
-}
-
-.c2 {
-  width: 280px;
-  height: 280px;
-  background: #388e3c;
-  bottom: -80px;
-  left: -80px;
-}
-
-.c3 {
-  width: 160px;
-  height: 160px;
-  background: #1b5e20;
-  top: 40%;
-  left: 10%;
-}
+.c1 { width: 420px; height: 420px; background: #2e7d32; top: -120px; right: -100px; }
+.c2 { width: 280px; height: 280px; background: #388e3c; bottom: -80px; left: -80px; }
+.c3 { width: 160px; height: 160px; background: #1b5e20; top: 40%; left: 10%; }
 
 /* Nút về trang chủ */
 .btn-home {
@@ -237,32 +311,17 @@ async function handleGoogleRegister() {
   box-shadow: 0 2px 8px rgba(46, 125, 50, .12);
   transition: background .15s, box-shadow .15s;
 }
-
-.btn-home:hover {
-  background: #f1f8e9;
-  box-shadow: 0 4px 14px rgba(46, 125, 50, .18);
-}
+.btn-home:hover { background: #f1f8e9; box-shadow: 0 4px 14px rgba(46, 125, 50, .18); }
 
 .auth-card {
   background: #fff;
   border-radius: 16px;
   padding: 24px 32px 20px;
   width: 100%;
-  max-width: 520px;
+  max-width: 540px;
   box-shadow: 0 8px 40px rgba(46, 125, 50, .13);
   position: relative;
   z-index: 1;
-}
-
-.auth-logo {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 6px;
-}
-
-.logo {
-  max-width: 56px;
-  height: auto;
 }
 
 .auth-tabs {
@@ -288,10 +347,7 @@ async function handleGoogleRegister() {
   z-index: 1;
   transition: color .25s;
 }
-
-.auth-tab.active {
-  color: #2e7d32;
-}
+.auth-tab.active { color: #2e7d32; }
 
 .auth-tab-indicator {
   position: absolute;
@@ -311,59 +367,21 @@ async function handleGoogleRegister() {
   font-weight: 500;
   margin-bottom: 12px;
 }
+.auth-alert.error   { background: #fdecea; color: #c62828; border: 1px solid #ffcdd2; }
+.auth-alert.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
 
-.auth-alert.error {
-  background: #fdecea;
-  color: #c62828;
-  border: 1px solid #ffcdd2;
-}
+.alert-fade-enter-active, .alert-fade-leave-active { transition: opacity .25s, transform .25s; }
+.alert-fade-enter-from, .alert-fade-leave-to { opacity: 0; transform: translateY(-6px); }
 
-.auth-alert.success {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
-}
+.auth-form { display: flex; flex-direction: column; gap: 10px; }
 
-.alert-fade-enter-active,
-.alert-fade-leave-active {
-  transition: opacity .25s, transform .25s;
-}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-.alert-fade-enter-from,
-.alert-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
+.form-group { display: flex; flex-direction: column; gap: 4px; }
 
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.form-group label { font-size: 12px; font-weight: 600; color: #444; }
 
-/* Layout 2 cột */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.form-group label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #444;
-}
-
-.optional {
-  font-weight: 400;
-  color: #aaa;
-}
+.optional { font-weight: 400; color: #aaa; }
 
 .input-wrap {
   display: flex;
@@ -374,11 +392,14 @@ async function handleGoogleRegister() {
   transition: border-color .2s, box-shadow .2s;
   background: #fafafa;
 }
-
 .input-wrap:focus-within {
   border-color: #2e7d32;
   box-shadow: 0 0 0 3px rgba(46, 125, 50, .1);
   background: #fff;
+}
+.input-wrap.has-error {
+  border-color: #e53935;
+  box-shadow: 0 0 0 3px rgba(229, 57, 53, .08);
 }
 
 .input-wrap input {
@@ -390,28 +411,66 @@ async function handleGoogleRegister() {
   color: #222;
   background: transparent;
 }
-
-.input-wrap input::placeholder {
-  color: #bbb;
-}
-
-.input-wrap input:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
+.input-wrap input::placeholder { color: #bbb; }
+.input-wrap input:disabled { opacity: .6; cursor: not-allowed; }
+/* Ẩn icon mắt mặc định của trình duyệt */
+.input-wrap input::-ms-reveal,
+.input-wrap input::-ms-clear { display: none; }
+.input-wrap input::-webkit-credentials-auto-fill-button { display: none !important; }
 
 .toggle-pwd {
   background: none;
   border: none;
   padding: 0 10px;
-  font-size: 13px;
   cursor: pointer;
   color: #aaa;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+.toggle-pwd:hover { color: #2e7d32; }
+
+/* ── Password Strength ──────────────────────────────────────────── */
+.pwd-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
 }
 
-.toggle-pwd:hover {
-  color: #2e7d32;
+.pwd-strength-track {
+  flex: 1;
+  height: 6px;
+  background: #e8e8e8;
+  border-radius: 99px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+}
+
+.pwd-strength-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .4s cubic-bezier(.4,0,.2,1), background-color .4s ease;
+}
+
+.pwd-strength-label {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: .3px;
+}
+
+/* Strength colors */
+.weak   { background: linear-gradient(90deg,#ef5350,#e53935); color: #e53935; }
+.fair   { background: linear-gradient(90deg,#ffa726,#fb8c00); color: #fb8c00; }
+.good   { background: linear-gradient(90deg,#66bb6a,#43a047); color: #43a047; }
+.strong { background: linear-gradient(90deg,#2e7d32,#1b5e20); color: #2e7d32; }
+
+/* ── Field error ────────────────────────────────────────────────── */
+.field-error {
+  font-size: 11px;
+  color: #e53935;
+  margin-top: 3px;
+  line-height: 1.4;
 }
 
 /* Divider */
@@ -424,13 +483,8 @@ async function handleGoogleRegister() {
   font-weight: 500;
   margin: 2px 0;
 }
-
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #e8e8e8;
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: #e8e8e8;
 }
 
 /* Nút Google */
@@ -451,17 +505,12 @@ async function handleGoogleRegister() {
   transition: background .15s, border-color .15s, box-shadow .15s;
   min-height: 42px;
 }
-
 .btn-google:hover:not(:disabled) {
   background: #f8f8f8;
   border-color: #bbb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
-
-.btn-google:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
+.btn-google:disabled { opacity: .6; cursor: not-allowed; }
 
 .btn-submit {
   padding: 11px;
@@ -472,26 +521,16 @@ async function handleGoogleRegister() {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background .2s, transform .1s;
+  transition: background .2s, transform .1s, opacity .2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   min-height: 44px;
 }
-
-.btn-submit:hover:not(:disabled) {
-  background: #1b5e20;
-}
-
-.btn-submit:active:not(:disabled) {
-  transform: scale(.98);
-}
-
-.btn-submit:disabled {
-  background: #a5d6a7;
-  cursor: not-allowed;
-}
+.btn-submit:hover:not(:disabled) { background: #1b5e20; }
+.btn-submit:active:not(:disabled) { transform: scale(.98); }
+.btn-submit:disabled { background: #a5d6a7; cursor: not-allowed; opacity: .7; }
 
 .spinner {
   width: 17px;
@@ -502,50 +541,17 @@ async function handleGoogleRegister() {
   animation: spin .7s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.auth-switch {
-  text-align: center;
-  font-size: 13px;
-  color: #888;
-  margin-top: 0;
-}
+.auth-switch { text-align: center; font-size: 13px; color: #888; margin-top: 0; }
+.auth-switch a { color: #2e7d32; font-weight: 600; text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
 
-.auth-switch a {
-  color: #2e7d32;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.auth-switch a:hover {
-  text-decoration: underline;
-}
-
-/* Màn hình nhỏ: về 1 cột và có thể cuộn */
+/* Màn hình nhỏ */
 @media (max-width: 560px) {
-  .auth-page {
-    height: auto;
-    min-height: 100vh;
-    overflow: auto;
-    padding: 60px 16px 24px;
-  }
-
-  .auth-card {
-    padding: 20px 18px 18px;
-    max-width: 100%;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .btn-home {
-    top: 12px;
-    left: 12px;
-  }
+  .auth-page { height: auto; min-height: 100vh; overflow: auto; padding: 60px 16px 24px; }
+  .auth-card { padding: 20px 18px 18px; max-width: 100%; }
+  .form-row { grid-template-columns: 1fr; }
+  .btn-home { top: 12px; left: 12px; }
 }
 </style>

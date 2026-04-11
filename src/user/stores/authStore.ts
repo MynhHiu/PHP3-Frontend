@@ -10,7 +10,7 @@ export interface User {
   phone: string
   address: string
   image?: string
-  role: string
+  role: number   // 0 = user, 1 = admin
   status: number
 }
 
@@ -22,7 +22,8 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   // ── Getters ────────────────────────────────────────────────────────────────
   const isLoggedIn = computed(() => !!token.value)
-  const isAdmin = computed(() => user.value?.role === 'admin')
+  const isAdmin    = computed(() => Number(user.value?.role) === 1)  // 1 = admin
+  const isUser     = computed(() => Number(user.value?.role) === 0)  // 0 = user
   const currentUser = computed(() => user.value)
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -169,7 +170,7 @@ async function register(data: {
     // state
     user, token, loading, error,
     // getters
-    isLoggedIn, isAdmin, currentUser,
+    isLoggedIn, isAdmin, isUser, currentUser,
     // actions
     register, login, loginWithGoogle, handleGoogleCallback, logout, fetchMe, init,
   }

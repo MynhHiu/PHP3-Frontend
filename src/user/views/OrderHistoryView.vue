@@ -97,6 +97,83 @@
       </div>
     </div>
 
+    <!-- ── MODAL ĐÁNH GIÁ ──────────────────────────────────────────── -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-box">
+        <button class="modal-close" @click="closeModal">×</button>
+        <h3 class="modal-title">Đánh giá sản phẩm</h3>
+
+        <!-- Chọn sản phẩm nếu có nhiều -->
+        <div v-if="modalProducts.length > 1" class="modal-product-select">
+          <label class="modal-label">Chọn sản phẩm muốn đánh giá:</label>
+          <div class="modal-product-list">
+            <div
+              v-for="p in modalProducts"
+              :key="p.skuCode"
+              :class="['modal-product-item', { active: reviewTarget?.skuCode === p.skuCode, reviewed: reviewedSkus.has(p.skuCode) }]"
+              @click="!reviewedSkus.has(p.skuCode) && selectProduct(p)"
+            >
+              <img :src="p.image" class="modal-product-img" />
+              <span class="modal-product-name">{{ p.name }}</span>
+              <span v-if="reviewedSkus.has(p.skuCode)" class="tag-reviewed">✓ Đã đánh giá</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info sản phẩm đang đánh giá -->
+        <div class="modal-product-info" v-if="reviewTarget">
+          <img :src="reviewTarget.image" class="modal-product-img-lg" />
+          <span class="modal-product-name-lg">{{ reviewTarget.name }}</span>
+        </div>
+
+        <div v-if="reviewTarget && !reviewedSkus.has(reviewTarget.skuCode)">
+          <!-- Chọn sao -->
+          <div class="modal-section">
+            <label class="modal-label">Chất lượng sản phẩm</label>
+            <div class="star-picker">
+              <span
+                v-for="s in 5" :key="s"
+                :class="['star', { active: s <= (hoverRating || reviewForm.rating) }]"
+                @click="reviewForm.rating = s"
+                @mouseover="hoverRating = s"
+                @mouseleave="hoverRating = 0"
+              >{{ s <= (hoverRating || reviewForm.rating) ? '★' : '☆' }}</span>
+              <span class="star-label">{{ starLabel(hoverRating || reviewForm.rating) }}</span>
+            </div>
+          </div>
+
+          <!-- Nội dung -->
+          <div class="modal-section">
+            <label class="modal-label">Nội dung đánh giá</label>
+            <textarea
+              v-model="reviewForm.comment"
+              class="modal-textarea"
+              rows="4"
+              placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
+            ></textarea>
+          </div>
+
+          <p v-if="reviewStore.error" class="modal-error">{{ reviewStore.error }}</p>
+
+          <div v-if="reviewStore.submitStatus === 'success'" class="modal-success">
+            🎉 Cảm ơn bạn đã đánh giá! Đánh giá đang chờ admin duyệt.
+          </div>
+
+          <div class="modal-actions" v-if="reviewStore.submitStatus !== 'success'">
+            <button class="btn-modal-cancel" @click="closeModal">Huỷ</button>
+            <button
+              class="btn-modal-submit"
+              @click="submitReview"
+              :disabled="reviewStore.submitStatus === 'loading' || reviewForm.rating === 0"
+            >{{ reviewStore.submitStatus === 'loading' ? 'Đang gửi...' : 'Gửi đánh giá' }}</button>
+          </div>
+          <div class="modal-actions" v-else>
+            <button class="btn-modal-submit" @click="closeModal">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Pagination -->
     <div class="pagination" v-if="totalPages > 1">
       <button :disabled="page <= 1" @click="page--" class="page-btn">‹</button>
@@ -112,12 +189,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useOrderStore } from '@/user/stores/orderStore'
 import { useCartStore } from '@/user/stores/cartStore'
+import { useReviewStore } from '@/user/stores/reviewStore'
 
-const orderStore = useOrderStore()
-const cartStore  = useCartStore()
+const orderStore  = useOrderStore()
+const cartStore   = useCartStore()
+const reviewStore = useReviewStore()
 
 const activeTab   = ref('all')
 const searchQuery = ref('')
@@ -133,9 +212,66 @@ const tabs = [
   { key: 'cancelled',  label: 'Đã huỷ' },
 ]
 
-onMounted(() => orderStore.fetchOrders())
+onMounted(async () => {
+  await orderStore.fetchOrders()
+  await reviewStore.fetchMyReviews()
+})
 
-// Chuyển đổi order từ store sang format hiển thị
+// ── Review modal ──────────────────────────────────────────────────────────────
+const showModal    = ref(false)
+const hoverRating  = ref(0)
+const reviewTarget = ref<{ name: string; image: string; skuCode: string } | null>(null)
+const modalProducts = ref<{ name: string; image: string; skuCode: string }[]>([])
+const reviewForm   = reactive({ rating: 0, comment: '' })
+
+const starLabel = (n: number) =>
+  ['', 'Rất tệ', 'Không hài lòng', 'Bình thường', 'Hài lòng', 'Rất hài lòng'][n] ?? ''
+
+const reviewedSkus = computed(() => {
+  const s = new Set<string>()
+  reviewStore.myReviews.forEach(r => s.add(r.product_sku_code))
+  return s
+})
+
+function reviewOrder(orderId: string) {
+  const order = orders.value.find(o => o.id === orderId)
+  if (!order) return
+  modalProducts.value = order.products.map((p: any) => ({
+    name:    p.name,
+    image:   p.image,
+    skuCode: p.skuCode,
+  }))
+  // Tự chọn sản phẩm đầu tiên chưa đánh giá
+  const first = modalProducts.value.find(p => !reviewedSkus.value.has(p.skuCode))
+  reviewTarget.value = first ?? modalProducts.value[0]
+  reviewForm.rating  = 0
+  reviewForm.comment = ''
+  reviewStore.resetSubmit()
+  showModal.value    = true
+}
+
+function selectProduct(p: { name: string; image: string; skuCode: string }) {
+  reviewTarget.value = p
+  reviewForm.rating  = 0
+  reviewForm.comment = ''
+  reviewStore.resetSubmit()
+}
+
+function closeModal() {
+  showModal.value = false
+  reviewStore.resetSubmit()
+}
+
+async function submitReview() {
+  if (!reviewTarget.value || reviewForm.rating === 0) return
+  await reviewStore.submitReview({
+    product_sku_code: reviewTarget.value.skuCode,
+    rating:           reviewForm.rating,
+    comment:          reviewForm.comment,
+  })
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
 const orders = computed(() =>
   orderStore.orders.map(o => ({
     id:       'ORD' + String(o.id).slice(-8),
@@ -146,10 +282,11 @@ const orders = computed(() =>
     payment:  o.payment,
     address:  o.address,
     products: (o.items ?? o.order_details ?? []).map((d: any) => ({
-      name:  d.product_name || d.product?.name  || d.product_sku_code,
-      qty:   d.quantity,
-      price: (d.price ?? d.product?.price ?? 0) * d.quantity,
-      image: d.product_image || d.product?.image_url || `https://placehold.co/60x60/e8f5e9/2e7d32?text=SP`,
+      name:    d.product_name || d.product?.name  || d.product_sku_code,
+      skuCode: d.product_sku_code,
+      qty:     d.quantity,
+      price:   (d.price ?? d.product?.price ?? 0) * d.quantity,
+      image:   d.product_image || d.product?.image_url || `https://placehold.co/60x60/e8f5e9/2e7d32?text=SP`,
     })),
   }))
 )
@@ -197,11 +334,9 @@ const cancelOrder = async (id: string) => {
   }
 }
 
-const reviewOrder = (id: string) => alert('Chức năng đánh giá đang phát triển')
-
 const rebuyOrder = async (order: any) => {
   for (const p of order.products) {
-    await cartStore.addToCart(p.name, p.qty, {
+    await cartStore.addToCart(p.skuCode, p.qty, {
       name:      p.name,
       image_url: p.image,
       price:     p.qty > 0 ? Math.round(p.price / p.qty) : 0,
@@ -396,4 +531,64 @@ const rebuyOrder = async (order: any) => {
   .order-card-footer { flex-direction: column; gap: 10px; align-items: flex-start; }
   .order-actions { flex-wrap: wrap; }
 }
+
+/* ── Modal ─────────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 999;
+}
+.modal-box {
+  background: #fff; border-radius: 12px; padding: 28px;
+  width: 90%; max-width: 500px; position: relative;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18); max-height: 90vh; overflow-y: auto;
+}
+.modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; font-size: 24px; cursor: pointer; color: #888;
+}
+.modal-title { font-size: 18px; font-weight: 700; color: #1b5e20; margin: 0 0 16px; }
+
+.modal-product-select { margin-bottom: 16px; }
+.modal-product-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.modal-product-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 8px; border: 1.5px solid #eee;
+  cursor: pointer; transition: all .2s;
+}
+.modal-product-item:hover:not(.reviewed) { border-color: #f57c00; background: #fff8f0; }
+.modal-product-item.active { border-color: #f57c00; background: #fff3e0; }
+.modal-product-item.reviewed { opacity: .5; cursor: default; }
+
+.modal-product-info {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 8px;
+}
+.modal-product-img { width: 40px; height: 40px; object-fit: contain; border-radius: 4px; }
+.modal-product-img-lg { width: 52px; height: 52px; object-fit: contain; border-radius: 6px; border: 1px solid #eee; }
+.modal-product-name { font-size: 13px; color: #555; flex: 1; }
+.modal-product-name-lg { font-size: 14px; font-weight: 500; color: #333; }
+.tag-reviewed { font-size: 11px; color: #2e7d32; background: #e8f5e9; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+
+.modal-section { margin-bottom: 18px; }
+.modal-label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+.star-picker { display: flex; align-items: center; gap: 6px; }
+.star { font-size: 32px; cursor: pointer; color: #ddd; transition: color .15s; }
+.star.active { color: #f5a623; }
+.star-label { font-size: 13px; color: #f5a623; font-weight: 600; margin-left: 6px; min-width: 100px; }
+.modal-textarea {
+  width: 100%; border: 1.5px solid #ddd; border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; resize: vertical;
+  font-family: inherit; box-sizing: border-box; transition: border-color .2s;
+}
+.modal-textarea:focus { outline: none; border-color: #2e7d32; }
+.modal-error { color: #e53935; font-size: 13px; margin-bottom: 12px; }
+.modal-success {
+  background: #e8f5e9; color: #2e7d32;
+  padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 16px;
+}
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-modal-cancel { padding: 10px 20px; border-radius: 6px; border: 1.5px solid #ccc; background: #fff; color: #555; font-size: 14px; cursor: pointer; }
+.btn-modal-submit { padding: 10px 24px; border-radius: 6px; border: none; background: #2e7d32; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.btn-modal-submit:hover:not(:disabled) { background: #1b5e20; }
+.btn-modal-submit:disabled { background: #a5d6a7; cursor: not-allowed; }
 </style>

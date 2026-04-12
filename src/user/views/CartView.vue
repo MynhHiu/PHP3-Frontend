@@ -79,12 +79,12 @@
             <span class="discount-label">Giảm giá:</span>
             <span class="discount-value">-{{ formatPrice(discount) }}đ</span>
           </div>
-          <div class="summary-line">
+          <!-- <div class="summary-line">
             <span>Phí vận chuyển:</span>
             <span :class="shippingFee === 0 ? 'free-ship' : ''">
               {{ shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee) + 'đ' }}
             </span>
-          </div>
+          </div> -->
           <div class="summary-divider"></div>
           <div class="summary-line total-line">
             <span>Tổng cộng:</span>
@@ -170,7 +170,7 @@ const selectedSubtotal = computed(() =>
     .reduce((sum, i) => sum + Number(i.price ?? i.product?.price ?? 0) * i.quantity, 0)
 )
 const shippingFee = computed(() => selectedSubtotal.value >= 5_000_000 ? 0 : 30_000)
-const total = computed(() => selectedSubtotal.value - discount.value + shippingFee.value)
+const total = computed(() => selectedSubtotal.value - discount.value)
 
 const formatPrice = (v: number) => v.toLocaleString('vi-VN')
 

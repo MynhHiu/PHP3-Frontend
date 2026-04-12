@@ -146,31 +146,18 @@ export const userOrderApi = {
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
 export const reviewApi = {
-  // Public: lấy đánh giá đã duyệt của 1 sản phẩm
   getByProduct: (productId: number) =>
     api.get(`/reviews/product/${productId}`),
-
-  // User: gửi đánh giá
   submit: (data: {
     product_sku_code: string
     rating: number
     comment: string
   }) => api.post('/user/reviews', data),
-
-  // User: xem đánh giá của mình
   myReviews: () => api.get('/user/reviews'),
-
-  // Admin: danh sách tất cả đánh giá
   adminGetAll: (params: { status?: string } = {}) =>
     api.get('/admin/reviews', { params }),
-
-  // Admin: duyệt
   approve: (id: number) => api.patch(`/admin/reviews/${id}/approve`),
-
-  // Admin: từ chối
   reject:  (id: number) => api.patch(`/admin/reviews/${id}/reject`),
-
-  // Admin: xoá
   delete:  (id: number) => api.delete(`/admin/reviews/${id}`),
 }
 
@@ -241,4 +228,32 @@ export const couponApi = {
   delete:  (code: string) => api.delete(`/admin/coupons/${code}`),
   apply:   (code: string, order_total: number) => api.post('/apply-coupon', { code, order_total }),
   markUsed:(code: string, user_id: number) => api.post(`/admin/coupons/${code}/use`, { user_id }),
+}
+
+// ── Contact ───────────────────────────────────────────────────────────────────  ← THÊM MỚI
+export const contactApi = {
+  // User: gửi liên hệ (không cần đăng nhập)
+  send: (data: {
+    fullname: string
+    email: string
+    phone?: string
+    subject: string
+    message: string
+  }) => api.post('/contact', data),
+
+  // Admin: danh sách liên hệ
+  adminGetAll: (params: { status?: string } = {}) =>
+    api.get('/admin/contacts', { params }),
+
+  // Admin: chi tiết
+  adminGetOne: (id: number) =>
+    api.get(`/admin/contacts/${id}`),
+
+  // Admin: cập nhật trạng thái
+  adminUpdateStatus: (id: number, status: 'pending' | 'replied' | 'closed') =>
+    api.patch(`/admin/contacts/${id}/status`, { status }),
+
+  // Admin: xoá
+  adminDelete: (id: number) =>
+    api.delete(`/admin/contacts/${id}`),
 }

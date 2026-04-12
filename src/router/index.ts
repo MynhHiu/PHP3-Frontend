@@ -34,6 +34,8 @@ const GoogleCallback   = () => import('@/user/views/GoogleCallback.vue')
 const VariantManager = () => import('@/admin/views/VariantManager.vue')
 
 const CouponsView = () => import('@/user/views/CouponsView.vue')
+const ContactView = () => import('@/user/views/ContactView.vue')
+const NewsView    = () => import('@/user/views/NewsView.vue') // ← THÊM MỚI
 
 // Shorthand meta helpers
 const adminMeta = { requiresAuth: true, requiresAdmin: true }
@@ -47,7 +49,6 @@ const router = createRouter({
   routes: [
 
     // ── ADMIN ─────────────────────────────────────────────────
-    // Chỉ dành cho role = 1 (admin). Nếu user thường vào sẽ bị chuyển về home.
     {
       path: '/admin',
       component: AdminLayout,
@@ -74,7 +75,7 @@ const router = createRouter({
         { path: 'variants/:id/edit',     component: VariantCreate,  name: 'variant-edit',      meta: adminMeta },
         { path: 'variants/assign',       component: VariantAssign,  name: 'variant-assign',    meta: adminMeta },
         { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager',   meta: adminMeta },
-        { path: 'reviews',               component: ReviewList,     name: 'reviews',           meta: adminMeta  },
+        { path: 'reviews',               component: ReviewList,     name: 'reviews',           meta: adminMeta },
       ],
     },
 
@@ -102,8 +103,6 @@ const router = createRouter({
     { path: '/auth/google/callback', name: 'google-callback', component: GoogleCallback },
 
     // ── USER / FRONTEND ───────────────────────────────────────
-    // Public routes (home, product, cart) không cần đăng nhập.
-    // Các trang nhạy cảm (checkout, profile, orders, coupons) yêu cầu đăng nhập.
     {
       path: '/',
       component: UserLayout,
@@ -111,11 +110,13 @@ const router = createRouter({
         { path: '',              component: HomeView,          name: 'home' },
         { path: 'products/:id',  component: ProductDetailView, name: 'product-detail' },
         { path: 'cart',          component: CartView,          name: 'cart' },
-        { path: 'checkout',      component: CheckoutView,      name: 'checkout',       meta: authMeta },
-        { path: 'profile',       component: ProfileView,       name: 'profile',        meta: authMeta },
-        { path: 'order-history', component: OrderHistoryView,  name: 'order-history',  meta: authMeta },
-        { path: 'order/:id',     component: OrderDetailView,   name: 'order-detail',   meta: authMeta },
-        { path: 'coupons',       component: CouponsView,       name: 'my-coupons',     meta: authMeta },
+        { path: 'checkout',      component: CheckoutView,      name: 'checkout',      meta: authMeta },
+        { path: 'profile',       component: ProfileView,       name: 'profile',       meta: authMeta },
+        { path: 'order-history', component: OrderHistoryView,  name: 'order-history', meta: authMeta },
+        { path: 'order/:id',     component: OrderDetailView,   name: 'order-detail',  meta: authMeta },
+        { path: 'coupons',       component: CouponsView,       name: 'my-coupons',    meta: authMeta },
+        { path: 'contact',       component: ContactView,       name: 'contact' },
+        { path: 'news',          component: NewsView,          name: 'news' },         // ← THÊM MỚI
       ],
     },
 
@@ -135,13 +136,11 @@ router.beforeEach((to: any, _from: any, next: any) => {
 
   // 2. Yêu cầu quyền admin (role = 1)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    // User đã đăng nhập nhưng không phải admin → về trang chủ
     return next({ name: 'home' })
   }
 
   // 3. Đã đăng nhập thì không vào trang guest (login/register)
   if (to.meta.guestOnly && authStore.isLoggedIn) {
-    // Nếu là admin thì redirect về dashboard, user thường về home
     return authStore.isAdmin
       ? next({ path: '/admin/dashboard' })
       : next({ name: 'home' })
@@ -149,5 +148,5 @@ router.beforeEach((to: any, _from: any, next: any) => {
 
   next()
 })
- 
+
 export default router

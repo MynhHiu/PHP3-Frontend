@@ -29,17 +29,20 @@ const OrderDetailView = () => import('@/user/views/OrderDetailView.vue')
 const ProductDetailView = () => import('@/user/views/ProductDetailView.vue')
 const LoginView = () => import('@/user/views/LoginView.vue')
 const RegisterView = () => import('@/user/views/RegisterView.vue')
-const GoogleCallback   = () => import('@/user/views/GoogleCallback.vue')
+const GoogleCallback = () => import('@/user/views/GoogleCallback.vue')
 
 const VariantManager = () => import('@/admin/views/VariantManager.vue')
 
 const CouponsView = () => import('@/user/views/CouponsView.vue')
 const ContactView = () => import('@/user/views/ContactView.vue')
-const NewsView    = () => import('@/user/views/NewsView.vue') // ← THÊM MỚI
+const NewsView = () => import('@/user/views/NewsView.vue') // ← THÊM MỚI
 
 // Shorthand meta helpers
 const adminMeta = { requiresAuth: true, requiresAdmin: true }
-const authMeta  = { requiresAuth: true }
+const authMeta = { requiresAuth: true }
+
+const BannerList = () => import('@/admin/views/BannerList.vue')
+const BannerForm = () => import('@/admin/views/BannerForm.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -54,28 +57,31 @@ const router = createRouter({
       component: AdminLayout,
       meta: adminMeta,
       children: [
-        { path: '',                      redirect: '/admin/dashboard' },
-        { path: 'dashboard',             component: DashboardView,  name: 'dashboard',       meta: adminMeta },
-        { path: 'products',              component: ProductList,    name: 'products',         meta: adminMeta },
-        { path: 'products/create',       component: ProductForm,    name: 'product-create',   meta: adminMeta },
-        { path: 'products/:id/edit',     component: ProductForm,    name: 'product-edit',     meta: adminMeta },
-        { path: 'categories',            component: CategoryList,   name: 'categories',       meta: adminMeta },
-        { path: 'categories/create',     component: CategoryForm,   name: 'category-create',  meta: adminMeta },
-        { path: 'categories/:id/edit',   component: CategoryForm,   name: 'category-edit',    meta: adminMeta },
-        { path: 'brands',                component: BrandList,      name: 'brands',            meta: adminMeta },
-        { path: 'brands/create',         component: BrandForm,      name: 'brand-create',      meta: adminMeta },
-        { path: 'brands/:id/edit',       component: BrandForm,      name: 'brand-edit',        meta: adminMeta },
-        { path: 'orders',                component: OrderList,      name: 'orders',            meta: adminMeta },
-        { path: 'users',                 component: UserList,       name: 'users',             meta: adminMeta },
-        { path: 'coupons',               component: CouponList,     name: 'coupons',           meta: adminMeta },
-        { path: 'coupons/create',        component: CouponForm,     name: 'coupon-create',     meta: adminMeta },
-        { path: 'coupons/:code/edit',    component: CouponForm,     name: 'coupon-edit',       meta: adminMeta },
-        { path: 'variants',              component: VariantList,    name: 'variants',          meta: adminMeta },
-        { path: 'variants/create',       component: VariantCreate,  name: 'variant-create',    meta: adminMeta },
-        { path: 'variants/:id/edit',     component: VariantCreate,  name: 'variant-edit',      meta: adminMeta },
-        { path: 'variants/assign',       component: VariantAssign,  name: 'variant-assign',    meta: adminMeta },
-        { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager',   meta: adminMeta },
-        { path: 'reviews',               component: ReviewList,     name: 'reviews',           meta: adminMeta },
+        { path: '', redirect: '/admin/dashboard' },
+        { path: 'dashboard', component: DashboardView, name: 'dashboard', meta: adminMeta },
+        { path: 'products', component: ProductList, name: 'products', meta: adminMeta },
+        { path: 'products/create', component: ProductForm, name: 'product-create', meta: adminMeta },
+        { path: 'products/:id/edit', component: ProductForm, name: 'product-edit', meta: adminMeta },
+        { path: 'categories', component: CategoryList, name: 'categories', meta: adminMeta },
+        { path: 'categories/create', component: CategoryForm, name: 'category-create', meta: adminMeta },
+        { path: 'categories/:id/edit', component: CategoryForm, name: 'category-edit', meta: adminMeta },
+        { path: 'brands', component: BrandList, name: 'brands', meta: adminMeta },
+        { path: 'brands/create', component: BrandForm, name: 'brand-create', meta: adminMeta },
+        { path: 'brands/:id/edit', component: BrandForm, name: 'brand-edit', meta: adminMeta },
+        { path: 'orders', component: OrderList, name: 'orders', meta: adminMeta },
+        { path: 'users', component: UserList, name: 'users', meta: adminMeta },
+        { path: 'coupons', component: CouponList, name: 'coupons', meta: adminMeta },
+        { path: 'coupons/create', component: CouponForm, name: 'coupon-create', meta: adminMeta },
+        { path: 'coupons/:code/edit', component: CouponForm, name: 'coupon-edit', meta: adminMeta },
+        { path: 'variants', component: VariantList, name: 'variants', meta: adminMeta },
+        { path: 'variants/create', component: VariantCreate, name: 'variant-create', meta: adminMeta },
+        { path: 'variants/:id/edit', component: VariantCreate, name: 'variant-edit', meta: adminMeta },
+        { path: 'variants/assign', component: VariantAssign, name: 'variant-assign', meta: adminMeta },
+        { path: 'products/:id/variants', component: VariantManager, name: 'variant-manager', meta: adminMeta },
+        { path: 'reviews', component: ReviewList, name: 'reviews', meta: adminMeta },
+        { path: 'banners', component: BannerList, name: 'banners', meta: adminMeta },
+        { path: 'banners/create', component: BannerForm, name: 'banner-create', meta: adminMeta },
+        { path: 'banners/:id/edit', component: BannerForm, name: 'banner-edit', meta: adminMeta },
       ],
     },
 
@@ -107,16 +113,16 @@ const router = createRouter({
       path: '/',
       component: UserLayout,
       children: [
-        { path: '',              component: HomeView,          name: 'home' },
-        { path: 'products/:id',  component: ProductDetailView, name: 'product-detail' },
-        { path: 'cart',          component: CartView,          name: 'cart' },
-        { path: 'checkout',      component: CheckoutView,      name: 'checkout',      meta: authMeta },
-        { path: 'profile',       component: ProfileView,       name: 'profile',       meta: authMeta },
-        { path: 'order-history', component: OrderHistoryView,  name: 'order-history', meta: authMeta },
-        { path: 'order/:id',     component: OrderDetailView,   name: 'order-detail',  meta: authMeta },
-        { path: 'coupons',       component: CouponsView,       name: 'my-coupons',    meta: authMeta },
-        { path: 'contact',       component: ContactView,       name: 'contact' },
-        { path: 'news',          component: NewsView,          name: 'news' },         // ← THÊM MỚI
+        { path: '', component: HomeView, name: 'home' },
+        { path: 'products/:id', component: ProductDetailView, name: 'product-detail' },
+        { path: 'cart', component: CartView, name: 'cart' },
+        { path: 'checkout', component: CheckoutView, name: 'checkout', meta: authMeta },
+        { path: 'profile', component: ProfileView, name: 'profile', meta: authMeta },
+        { path: 'order-history', component: OrderHistoryView, name: 'order-history', meta: authMeta },
+        { path: 'order/:id', component: OrderDetailView, name: 'order-detail', meta: authMeta },
+        { path: 'coupons', component: CouponsView, name: 'my-coupons', meta: authMeta },
+        { path: 'contact', component: ContactView, name: 'contact' },
+        { path: 'news', component: NewsView, name: 'news' },         // ← THÊM MỚI
       ],
     },
 

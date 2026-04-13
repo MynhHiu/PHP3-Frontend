@@ -257,3 +257,25 @@ export const contactApi = {
   adminDelete: (id: number) =>
     api.delete(`/admin/contacts/${id}`),
 }
+
+export const bannerApi = {
+  getAll:  ()            => api.get('/admin/banners'),
+  getOne:  (id: number)  => api.get(`/admin/banners/${id}`),
+  create:  (data: FormData) => api.post('/admin/banners', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update:  (id: number, data: FormData) => {
+    data.append('_method', 'PUT')
+    return api.post(`/admin/banners/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  delete:  (id: number) => api.delete(`/admin/banners/${id}`),
+  toggle:  (id: number) => api.patch(`/admin/banners/${id}/toggle`),
+}
+ 
+// ── Banners (Public - trang chủ) ──────────────────────────────────────────────
+export const bannerPublicApi = {
+  getActive: () => api.get('/banners'),
+}
+ 

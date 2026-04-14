@@ -78,13 +78,12 @@
                 :value="o.status"
                 @change="changeStatus(o.id, ($event.target as HTMLSelectElement).value)"
                 :class="['status-select', 'status-' + o.status]"
-                :disabled="updatingId === o.id"
+                :disabled="updatingId === o.id || !canChangeStatus(o.status)"
               >
-                <option value="pending">Chờ xử lý</option>
-                <option value="confirmed">Đã xác nhận</option>
-                <option value="shipping">Đang giao</option>
-                <option value="delivered">Đã giao</option>
-                <option value="cancelled">Đã hủy</option>
+                <option :value="o.status">{{ statusLabel(o.status) }}</option>
+                <option v-for="opt in availableStatuses(o.status)" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
               </select>
             </td>
             <td style="font-size:12px;color:var(--gray-500)">{{ fmtDate(o.created_at) }}</td>
@@ -186,15 +185,17 @@
             <p style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:8px">CẬP NHẬT TRẠNG THÁI</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button
-                v-for="s in statusOptions"
+                v-for="s in availableStatuses(detailOrder.status)"
                 :key="s.value"
                 @click="quickChangeStatus(detailOrder.id, s.value)"
-                :disabled="detailOrder.status === s.value || updatingId === detailOrder.id"
-                :class="['btn-status', detailOrder.status === s.value ? 'active' : '']"
-                :style="detailOrder.status === s.value ? `background:${s.color};color:#fff;border-color:${s.color}` : ''"
+                :disabled="updatingId === detailOrder.id"
+                :class="['btn-status']"
               >
                 {{ s.label }}
               </button>
+            </div>
+            <div v-if="!canChangeStatus(detailOrder.status)" style="font-size:12px;color:var(--gray-500);margin-top:8px">
+              Đơn hàng này đã hoàn tất và không thể thay đổi trạng thái.
             </div>
           </div>
         </div>
@@ -240,6 +241,44 @@ const statusOptions = [
   { value: 'delivered', label: 'Đã giao',         color: '#10b981' },
   { value: 'cancelled', label: 'Hủy đơn',         color: '#ef4444' },
 ]
+
+// Computed: các trạng thái có thể chọn dựa trên trạng thái hiện tại
+const availableStatuses = computed(() => {
+  const all = [
+    { value: 'pending', label: 'Chờ xử lý' },
+    { value: 'confirmed', label: 'Đã xác nhận' },
+    { value: 'shipping', label: 'Đang giao' },
+    { value: 'delivered', label: 'Đã giao' },
+    { value: 'cancelled', label: 'Đã hủy' },
+  ]
+
+  return (currentStatus: string) => {
+    if (currentStatus === 'delivered' || currentStatus === 'cancelled') {
+      // Đã giao hoặc đã hủy thì không cho thay đổi nữa
+      return []
+    }
+    if (currentStatus === 'confirmed') {
+      // Đã xác nhận thì chỉ cho chuyển sang shipping hoặc delivered
+      return all.filter(s => ['shipping', 'delivered'].includes(s.value))
+    }
+    if (currentStatus === 'shipping') {
+      // Đang giao thì chỉ cho chuyển sang delivered
+      return all.filter(s => s.value === 'delivered')
+    }
+    if (currentStatus === 'pending') {
+      // Chờ xử lý thì cho chuyển sang confirmed, shipping hoặc cancelled
+      return all.filter(s => ['confirmed', 'shipping', 'cancelled'].includes(s.value))
+    }
+    return all.filter(s => s.value !== currentStatus)
+  }
+})
+
+// Computed: kiểm tra có thể thay đổi trạng thái không
+const canChangeStatus = computed(() => {
+  return (status: string) => {
+    return status !== 'delivered' && status !== 'cancelled'
+  }
+})
 
 let timer: ReturnType<typeof setTimeout>
 function debouncedFetch() { clearTimeout(timer); timer = setTimeout(doFetch, 350) }

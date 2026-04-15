@@ -4,7 +4,6 @@
     <div class="contact-hero">
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <span class="hero-label">Hỗ trợ khách hàng</span>
         <h1 class="hero-title">Liên hệ với chúng tôi</h1>
         <p class="hero-sub">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn 24/7</p>
       </div>
@@ -13,23 +12,20 @@
     <div class="contact-wrapper">
       <!-- Info Cards -->
       <div class="info-section">
-        <div class="info-card">
-          <div class="info-icon">📍</div>
+        <!-- <div class="info-card">
           <h3>Địa chỉ</h3>
           <p>515 Hà Huy Tập Buôn Ma Thuột<br/>Dak Lak, Việt Nam</p>
         </div>
         <div class="info-card">
-          <div class="info-icon">📞</div>
           <h3>Điện thoại</h3>
           <p>03 74 653 150</p>
           <span class="info-note">Thứ 2 – Thứ 7, 8:00–17:00</span>
         </div>
         <div class="info-card">
-          <div class="info-icon">✉️</div>
           <h3>Email</h3>
           <p>anhnttpk04082@gmail.com</p>
           <span class="info-note">Phản hồi trong 24 giờ</span>
-        </div>
+        </div> -->
       </div>
 
       <!-- Form Section -->
@@ -45,7 +41,6 @@
               <div class="form-group">
                 <label>Họ và tên <span class="required">*</span></label>
                 <div class="input-wrap">
-                  <span class="input-icon">👤</span>
                   <input
                     v-model="form.fullname"
                     type="text"
@@ -57,7 +52,6 @@
               <div class="form-group">
                 <label>Email <span class="required">*</span></label>
                 <div class="input-wrap">
-                  <span class="input-icon">📧</span>
                   <input
                     v-model="form.email"
                     type="email"
@@ -72,7 +66,6 @@
               <div class="form-group">
                 <label>Số điện thoại</label>
                 <div class="input-wrap">
-                  <span class="input-icon">📱</span>
                   <input
                     v-model="form.phone"
                     type="tel"
@@ -83,7 +76,6 @@
               <div class="form-group">
                 <label>Tiêu đề <span class="required">*</span></label>
                 <div class="input-wrap">
-                  <span class="input-icon">📝</span>
                   <input
                     v-model="form.subject"
                     type="text"
@@ -163,24 +155,26 @@ async function handleSubmit() {
 /* ── Hero ── */
 .contact-hero {
   position: relative;
-  background: linear-gradient(135deg, #1a5c2a 0%, #2e8b3e 50%, #1a5c2a 100%);
+  background: #fff;
   padding: 64px 24px;
   text-align: center;
   overflow: hidden;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
 }
 .hero-overlay {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 40%);
+    radial-gradient(circle at 20% 50%, rgba(0,0,0,0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,0,0,0.02) 0%, transparent 40%);
   pointer-events: none;
 }
 .hero-content { position: relative; z-index: 1; }
 .hero-label {
   display: inline-block;
-  background: rgba(255,255,255,0.15);
-  color: #a8f0b8;
+  background: #f4f6f9;
+  color: #1a5c2e;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 2px;
@@ -188,18 +182,17 @@ async function handleSubmit() {
   padding: 6px 16px;
   border-radius: 20px;
   margin-bottom: 16px;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid #dfe5ea;
 }
 .hero-title {
-  color: #fff;
-  font-size: clamp(28px, 5vw, 44px);
-  font-weight: 800;
-  margin: 0 0 12px;
-  letter-spacing: -0.5px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1b5e20;
+  margin: 0 0 4px;
 }
 .hero-sub {
-  color: rgba(255,255,255,0.75);
-  font-size: 16px;
+  font-size: 14px;
+  color: #888;
   margin: 0;
 }
 

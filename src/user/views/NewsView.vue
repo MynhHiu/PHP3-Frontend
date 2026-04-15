@@ -5,7 +5,6 @@
     <div class="news-hero">
       <div class="hero-bg-pattern"></div>
       <div class="hero-content">
-        <span class="hero-badge">📰 Tin tức & Công nghệ</span>
         <h1>Tin tức mới nhất</h1>
         <p>Cập nhật xu hướng điện gia dụng, mẹo tiết kiệm điện và công nghệ thông minh</p>
       </div>
@@ -22,7 +21,7 @@
           :class="{ active: activeCategory === cat.value }"
           @click="activeCategory = cat.value"
         >
-          {{ cat.icon }} {{ cat.label }}
+          {{ cat.label }}
         </button>
       </div>
 
@@ -87,7 +86,6 @@
       <!-- Newsletter -->
       <div class="newsletter-box">
         <div class="nl-left">
-          <span class="nl-icon">💌</span>
           <div>
             <h3>Đăng ký nhận tin</h3>
             <p>Nhận ngay ưu đãi và tin tức mới nhất từ Green Electric</p>
@@ -110,11 +108,11 @@ const activeCategory = ref('all')
 const email = ref('')
 
 const categories = [
-  { value: 'all',        icon: '🗂',  label: 'Tất cả' },
-  { value: 'tiet-kiem',  icon: '⚡',  label: 'Tiết kiệm điện' },
-  { value: 'cong-nghe',  icon: '🔧',  label: 'Công nghệ' },
-  { value: 'tu-van',     icon: '💡',  label: 'Tư vấn' },
-  { value: 'khuyen-mai', icon: '🎁',  label: 'Khuyến mãi' },
+  { value: 'all', label: 'Tất cả' },
+  { value: 'tiet-kiem',  label: 'Tiết kiệm điện' },
+  { value: 'cong-nghe', label: 'Công nghệ' },
+  { value: 'tu-van', label: 'Tư vấn' },
+  { value: 'khuyen-mai', label: 'Khuyến mãi' },
 ]
 
 const allArticles = [
@@ -218,26 +216,27 @@ function subscribeNewsletter() {
 /* ── Hero ── */
 .news-hero {
   position: relative;
-  background: linear-gradient(135deg, #0d3d1a 0%, #1a5c2a 40%, #2e8b3e 100%);
+  background: #fff;
   padding: 60px 24px 56px;
   text-align: center;
   overflow: hidden;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
 }
 .hero-bg-pattern {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 10% 80%, rgba(255,255,255,0.06) 0%, transparent 45%),
-    radial-gradient(circle at 90% 20%, rgba(255,255,255,0.08) 0%, transparent 40%),
-    repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 80px);
+    radial-gradient(circle at 10% 80%, rgba(0,0,0,0.03) 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(0,0,0,0.02) 0%, transparent 40%);
   pointer-events: none;
 }
 .hero-content { position: relative; z-index: 1; }
 .hero-badge {
   display: inline-block;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: #a8f0b8;
+  background: #f4f6f9;
+  border: 1px solid #dfe5ea;
+  color: #2e8b3e;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -247,18 +246,15 @@ function subscribeNewsletter() {
   margin-bottom: 18px;
 }
 .hero-content h1 {
-  color: #fff;
-  font-size: clamp(28px, 5vw, 46px);
-  font-weight: 900;
-  margin: 0 0 14px;
-  letter-spacing: -1px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1b5e20;
+  margin: 0 0 4px;
 }
 .hero-content p {
-  color: rgba(255,255,255,0.72);
-  font-size: 16px;
-  max-width: 540px;
-  margin: 0 auto;
-  line-height: 1.7;
+  font-size: 14px;
+  color: #888;
+  margin: 0;
 }
 
 /* ── Container ── */

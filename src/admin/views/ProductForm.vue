@@ -235,7 +235,7 @@
                     <input
                       v-model.number="sku.price"
                       type="number"
-                      min="0"
+                      min="1"
                       step="1000"
                       class="input"
                       required
@@ -604,6 +604,10 @@ async function submit() {
     }
     if (new Set(codes).size !== codes.length) {
       showToast("Mã SKU bị trùng, vui lòng kiểm tra lại", "error");
+      return;
+    }
+    if (skus.value.some((s) => s.price <= 0)) {
+      showToast("Giá sản phẩm phải lớn hơn 0", "error");
       return;
     }
   }

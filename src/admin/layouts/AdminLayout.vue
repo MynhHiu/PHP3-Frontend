@@ -65,20 +65,12 @@
           </div>
         </router-link>
 
-        <!-- ── 2 TRANG MỚI: BIẾN THỂ ─────────────────────────────────── -->
+        <!-- ── BIẾN THỂ ──────────────────────────────────────────────── -->
         <template v-if="open">
           <p class="nav-section" style="margin-top:8px">Biến thể</p>
         </template>
         <div v-else class="nav-divider"></div>
 
-        <!--
-          TRANG 1: Tạo biến thể
-          Route: /admin/variants/create
-          File:  src/admin/views/VariantCreate.vue
-          Chức năng:
-            - Tạo mới một variant (product_variants: variant_name, product_id)
-            - Thêm các option_values (variant_options: option_values INT(11), product_variant_id)
-        -->
         <router-link to="/admin/variants/create" custom v-slot="{ isActive, navigate }">
           <div @click="navigate"
             :class="['nav-link', (isActive || isVariantCreateActive) && 'active', !open && 'center']"
@@ -88,27 +80,6 @@
           </div>
         </router-link>
 
-        <!--
-          TRANG 2: Chọn biến thể cho sản phẩm
-          Route: /admin/variants/assign
-          File:  src/admin/views/VariantAssign.vue
-          Chức năng:
-            - Chọn sản phẩm → xem biến thể hiện có
-            - Tạo biến thể mới và gán ngay vào sản phẩm đó
-            - Tạo SKU (product_skus) và gán combination_options
-        -->
-        <!-- <router-link to="/admin/variants/assign" custom v-slot="{ isActive, navigate }">
-          <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']" :title="!open ? 'Gán biến thể' : ''">
-            <IconVariantAssign class="nav-icon" />
-            <span v-if="open">Gán biến thể</span>
-          </div>
-        </router-link> -->
-
-        <!--
-          TRANG PHỤ: Danh sách biến thể (truy cập từ sidebar phụ)
-          Route: /admin/variants
-          File:  src/admin/views/VariantList.vue
-        -->
         <router-link to="/admin/variants" custom v-slot="{ isActive, navigate }">
           <div @click="navigate"
             :class="['nav-link', (isActive && !isVariantCreateActive && !isVariantAssignActive) && 'active', !open && 'center']"
@@ -117,8 +88,8 @@
             <span v-if="open">Danh sách biến thể</span>
           </div>
         </router-link>
-        <!-- ──────────────────────────────────────────────────────────── -->
 
+        <!-- ── KINH DOANH ─────────────────────────────────────────────── -->
         <template v-if="open">
           <p class="nav-section" style="margin-top:8px">Kinh doanh</p>
         </template>
@@ -140,8 +111,6 @@
           </div>
         </router-link>
 
-
-
         <router-link to="/admin/coupons" custom v-slot="{ isActive, navigate }">
           <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']"
             :title="!open ? 'Mã giảm giá' : ''">
@@ -158,6 +127,16 @@
           </div>
         </router-link>
 
+        <!-- ← THÊM MỚI: Liên hệ -->
+        <router-link to="/admin/contacts" custom v-slot="{ isActive, navigate }">
+          <div @click="navigate" :class="['nav-link', isActive && 'active', !open && 'center']"
+            :title="!open ? 'Liên hệ' : ''">
+            <IconMail class="nav-icon" />
+            <span v-if="open">Liên hệ</span>
+          </div>
+        </router-link>
+
+        <!-- ── HỆ THỐNG ───────────────────────────────────────────────── -->
         <template v-if="open">
           <p class="nav-section" style="margin-top:8px">Hệ thống</p>
         </template>
@@ -213,39 +192,37 @@ import logoImage from '@/assets/image/image-removebg-preview.png'
 const open = ref(true)
 const route = useRoute()
 
-// Computed để active đúng nav-link biến thể
 const isVariantCreateActive = computed(() =>
   route.path.includes('/admin/variants/create') || route.path.includes('/admin/variants/') && route.path.includes('/edit')
 )
 const isVariantAssignActive = computed(() => route.path.includes('/admin/variants/assign'))
 
 const titles: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'products': 'Sản phẩm',
+  'dashboard':      'Dashboard',
+  'products':       'Sản phẩm',
   'product-create': 'Thêm sản phẩm',
-  'product-edit': 'Sửa sản phẩm',
-  'categories': 'Danh mục',
-  'category-create': 'Thêm danh mục',
-  'category-edit': 'Sửa danh mục',
-  'brands': 'Thương hiệu',
-  'brand-create': 'Thêm thương hiệu',
-  'brand-edit': 'Sửa thương hiệu',
-  'orders': 'Lịch sử đơn hàng',
-  'users': 'Quản lý người dùng',
-  'coupons': 'Mã giảm giá',
-  'coupon-create': 'Thêm mã giảm giá',
-  'coupon-edit': 'Sửa mã giảm giá',
-  'reviews': 'Quản lý đánh giá',
-
-  'variants': 'Danh sách biến thể',
+  'product-edit':   'Sửa sản phẩm',
+  'categories':     'Danh mục',
+  'category-create':'Thêm danh mục',
+  'category-edit':  'Sửa danh mục',
+  'brands':         'Thương hiệu',
+  'brand-create':   'Thêm thương hiệu',
+  'brand-edit':     'Sửa thương hiệu',
+  'orders':         'Lịch sử đơn hàng',
+  'users':          'Quản lý người dùng',
+  'coupons':        'Mã giảm giá',
+  'coupon-create':  'Thêm mã giảm giá',
+  'coupon-edit':    'Sửa mã giảm giá',
+  'reviews':        'Quản lý đánh giá',
+  'contacts':       'Quản lý liên hệ', // ← THÊM MỚI
+  'variants':       'Danh sách biến thể',
   'variant-create': 'Tạo biến thể',
-  'variant-edit': 'Sửa biến thể',
+  'variant-edit':   'Sửa biến thể',
   'variant-assign': 'Gán biến thể',
-
 }
 const pageTitle = computed(() => titles[route.name as string] || 'Admin')
 
-// Icons
+// Icons (giữ nguyên toàn bộ icon cũ)
 const IconGrid = {
   render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
     h('rect', { x: '3', y: '3', width: '7', height: '7', rx: '1' }),
@@ -296,12 +273,12 @@ const IconStar = {
     h('polygon', { points: '12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2' }),
   ])
 }
-const IconBanner = { render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('rect', { x: '3', y: '5', width: '18', height: '14', rx: '2' }),
-  h('path', { d: 'M3 10h18' }),
-]) }
-
-// Icon cho trang "Tạo biến thể" — dấu + trong ô
+const IconBanner = {
+  render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+    h('rect', { x: '3', y: '5', width: '18', height: '14', rx: '2' }),
+    h('path', { d: 'M3 10h18' }),
+  ])
+}
 const IconVariantCreate = {
   render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
     h('rect', { x: '2', y: '7', width: '20', height: '14', rx: '2' }),
@@ -309,14 +286,20 @@ const IconVariantCreate = {
     h('path', { d: 'M12 11v6M9 14h6' }),
   ])
 }
-
-// Icon cho trang "Gán biến thể" — mũi tên nối
 const IconVariantAssign = {
   render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
     h('rect', { x: '2', y: '3', width: '8', height: '8', rx: '1' }),
     h('rect', { x: '14', y: '13', width: '8', height: '8', rx: '1' }),
     h('path', { d: 'M10 7h4M14 7l-2-2M14 7l-2 2' }),
     h('path', { d: 'M6 11v3M6 14h12M18 14v-3' }),
+  ])
+}
+
+// ← THÊM MỚI: Icon phong bì cho Liên hệ
+const IconMail = {
+  render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+    h('path', { d: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z' }),
+    h('polyline', { points: '22,6 12,13 2,6' }),
   ])
 }
 </script>

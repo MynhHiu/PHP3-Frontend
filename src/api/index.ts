@@ -28,6 +28,11 @@ api.interceptors.response.use(
 
 export default api
 
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+export const dashboardApi = {
+  getStats: () => api.get('/admin/dashboard/stats'),
+}
+
 // ── Categories ────────────────────────────────────────────────────────────────
 export const categoryApi = {
   getAll:  (params = {}) => api.get('/admin/categories', { params }),
@@ -230,9 +235,8 @@ export const couponApi = {
   markUsed:(code: string, user_id: number) => api.post(`/admin/coupons/${code}/use`, { user_id }),
 }
 
-// ── Contact ───────────────────────────────────────────────────────────────────  ← THÊM MỚI
+// ── Contact ───────────────────────────────────────────────────────────────────
 export const contactApi = {
-  // User: gửi liên hệ (không cần đăng nhập)
   send: (data: {
     fullname: string
     email: string
@@ -241,23 +245,20 @@ export const contactApi = {
     message: string
   }) => api.post('/contact', data),
 
-  // Admin: danh sách liên hệ
   adminGetAll: (params: { status?: string } = {}) =>
     api.get('/admin/contacts', { params }),
 
-  // Admin: chi tiết
   adminGetOne: (id: number) =>
     api.get(`/admin/contacts/${id}`),
 
-  // Admin: cập nhật trạng thái
   adminUpdateStatus: (id: number, status: 'pending' | 'replied' | 'closed') =>
     api.patch(`/admin/contacts/${id}/status`, { status }),
 
-  // Admin: xoá
   adminDelete: (id: number) =>
     api.delete(`/admin/contacts/${id}`),
 }
 
+// ── Banners (Admin) ───────────────────────────────────────────────────────────
 export const bannerApi = {
   getAll:  ()            => api.get('/admin/banners'),
   getOne:  (id: number)  => api.get(`/admin/banners/${id}`),
@@ -273,9 +274,8 @@ export const bannerApi = {
   delete:  (id: number) => api.delete(`/admin/banners/${id}`),
   toggle:  (id: number) => api.patch(`/admin/banners/${id}/toggle`),
 }
- 
+
 // ── Banners (Public - trang chủ) ──────────────────────────────────────────────
 export const bannerPublicApi = {
   getActive: () => api.get('/banners'),
 }
- 

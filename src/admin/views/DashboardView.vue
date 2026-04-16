@@ -1,7 +1,7 @@
 <template>
   <div class="page-stack">
 
-    <!-- Stats -->
+    <!-- Stats Cards -->
     <div class="stat-grid">
       <div v-for="s in statCards" :key="s.label" class="stat-card">
         <div :class="['stat-icon', s.bg]">
@@ -10,122 +10,203 @@
         <div>
           <p class="stat-label">{{ s.label }}</p>
           <p class="stat-value">
-            <template v-if="loading">—</template>
+            <template v-if="dash.loading">—</template>
             <template v-else>{{ s.value }}</template>
           </p>
+          <p v-if="s.sub" class="stat-sub">{{ s.sub }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Empty state -->
-    <div v-if="!loading && productStore.products.length === 0" class="empty-state">
-      <div class="empty-icon">📦</div>
-      <h3>Chưa có dữ liệu</h3>
-      <p>
-        Chưa kết nối được với API Laravel. Kiểm tra lại
-        <code>.env</code> hoặc bắt đầu thêm sản phẩm.
-      </p>
-      <!-- <div class="empty-actions">
-        <router-link to="/admin/products/create" class="btn btn-primary">+ Thêm sản phẩm</router-link>
-        <router-link to="/admin/categories/create" class="btn btn-outline">+ Thêm danh mục</router-link>
-      </div> -->
-    </div>
+    <!-- Doanh thu 6 tháng -->
+    <div class="dash-grid" v-if="!dash.loading">
 
-    <!-- Có dữ liệu -->
-    <div v-else-if="productStore.products.length > 0" class="dash-grid">
       <div class="card">
         <div class="card-head">
-          <h3>Sản phẩm mới nhất</h3>
+          <h3>Doanh thu 6 tháng gần nhất</h3>
+        </div>
+        <div class="card-body">
+          <div
+            v-for="item in dash.stats.revenue_chart"
+            :key="item.label"
+            class="chart-row"
+          >
+            <span class="chart-label">{{ item.label }}</span>
+            <div class="chart-bar-wrap">
+              <div
+                class="chart-bar"
+                :style="{ width: barWidth(item.revenue) + '%' }"
+              ></div>
+            </div>
+            <span class="chart-value">{{ fmtRevenue(item.revenue) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top sản phẩm bán chạy -->
+      <div class="card">
+        <div class="card-head">
+          <h3>Top sản phẩm bán chạy</h3>
           <router-link to="/admin/products">Xem tất cả →</router-link>
         </div>
         <table class="table-auto">
           <thead>
             <tr>
+              <th>#</th>
               <th>Tên sản phẩm</th>
+              <th>Đã bán</th>
               <th>Giá</th>
-              <th>Tồn kho</th>
-              <th>Trạng thái</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="p in productStore.products.slice(0, 5)" :key="p.id">
-              <td style="font-weight:600;color:var(--gray-800);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</td>
+            <tr
+              v-for="(p, idx) in dash.stats.top_products"
+              :key="p.id"
+            >
+              <td style="color:var(--gray-400);font-weight:600">{{ idx + 1 }}</td>
+              <td style="font-weight:600;color:var(--gray-800);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                {{ p.name }}
+              </td>
+              <td><span class="badge badge-green">{{ p.sold_count }}</span></td>
               <td class="price-main">{{ fmt(p.price) }}</td>
-              <td :style="p.stock === 0 ? 'color:var(--red-500);font-weight:600' : ''">{{ p.stock }}</td>
-              <td><span :class="statusBadge(p.status)">{{ statusLabel(p.status) }}</span></td>
+            </tr>
+            <tr v-if="dash.stats.top_products.length === 0">
+              <td colspan="4" style="text-align:center;color:var(--gray-400)">Chưa có dữ liệu</td>
             </tr>
           </tbody>
         </table>
       </div>
 
+    </div>
+
+    <!-- Đơn hàng & Người dùng -->
+    <div class="dash-grid" v-if="!dash.loading">
+
       <div class="card">
         <div class="card-head">
-          <h3>Danh mục</h3>
-          <router-link to="/admin/categories">Quản lý →</router-link>
+          <h3>Đơn hàng</h3>
+          <router-link to="/admin/orders">Quản lý →</router-link>
         </div>
-        <div class="card-body">
-          <div v-if="categoryStore.categories.length === 0" class="cat-empty">Chưa có danh mục</div>
-          <div v-for="cat in categoryStore.categories.slice(0, 6)" :key="cat.id" class="cat-row">
-            <span>{{ cat.name }}</span>
-            <span class="cat-count">{{ cat.products_count ?? 0 }} SP</span>
+        <div class="card-body order-summary">
+          <div class="order-item">
+            <span>Tổng đơn</span>
+            <strong>{{ dash.stats.orders.total }}</strong>
+          </div>
+          <div class="order-item">
+            <span>Chờ xử lý</span>
+            <span class="badge badge-yellow">{{ dash.stats.orders.pending }}</span>
+          </div>
+          <div class="order-item">
+            <span>Hoàn thành</span>
+            <span class="badge badge-green">{{ dash.stats.orders.done }}</span>
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Người dùng</h3>
+          <router-link to="/admin/users">Quản lý →</router-link>
+        </div>
+        <div class="card-body order-summary">
+          <div class="order-item">
+            <span>Tổng người dùng</span>
+            <strong>{{ dash.stats.users.total }}</strong>
+          </div>
+          <div class="order-item">
+            <span>Mới tháng này</span>
+            <span class="badge badge-blue">+{{ dash.stats.users.new_month }}</span>
+          </div>
+          <div class="order-item">
+            <span>Đánh giá chờ duyệt</span>
+            <span class="badge badge-yellow">{{ dash.stats.reviews.pending }}</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Quick actions -->
-    <!-- <div class="action-grid">
-      <router-link to="/admin/products/create" class="action-card">
-        <div class="action-icon">
-          <svg style="width:24px;height:24px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-        </div>
-        <div class="action-text">
-          <p class="a-title">Thêm sản phẩm mới</p>
-          <p class="a-sub">Tạo và đăng bán ngay</p>
-        </div>
-      </router-link>
-
-      <router-link to="/admin/categories/create" class="action-card">
-        <div class="action-icon">
-          <svg style="width:24px;height:24px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-        </div>
-        <div class="action-text">
-          <p class="a-title">Thêm danh mục</p>
-          <p class="a-sub">Tổ chức sản phẩm theo nhóm</p>
-        </div>
-      </router-link>
-    </div> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useProductStore }  from '@/admin/stores/productStore'
-import { useCategoryStore } from '@/admin/stores/categoryStore'
+import { useDashboardStore } from '@/admin/stores/dashboardStore'
 
-const productStore  = useProductStore()
-const categoryStore = useCategoryStore()
-const loading       = computed(() => productStore.loading || categoryStore.loading)
+const dash = useDashboardStore()
 
+// ── Stat cards ──────────────────────────────────────────────────────────────
 const statCards = computed(() => [
-  { label: 'Tổng sản phẩm', value: productStore.meta.total,         bg: 'green',  emoji: '📦' },
-  { label: 'Đang bán',       value: productStore.stats.active,       bg: 'blue',   emoji: '✅' },
-  { label: 'Hết hàng',       value: productStore.stats.outStock,     bg: 'red',    emoji: '⚠️' },
-  { label: 'Danh mục',       value: categoryStore.categories.length, bg: 'yellow', emoji: '📂' },
+  {
+    label: 'Tổng sản phẩm',
+    value: dash.stats.products.total,
+    sub:   `Đang bán: ${dash.stats.products.active}`,
+    bg: 'green', emoji: '📦',
+  },
+  {
+    label: 'Hết hàng',
+    value: dash.stats.products.out_stock,
+    bg: 'red', emoji: '⚠️',
+  },
+  {
+    label: 'Doanh thu tháng này',
+    value: fmtRevenue(dash.stats.revenue.this_month),
+    sub:   `Tổng: ${fmtRevenue(dash.stats.revenue.total)}`,
+    bg: 'blue', emoji: '💰',
+  },
+  {
+    label: 'Đơn chờ xử lý',
+    value: dash.stats.orders.pending,
+    sub:   `Tổng đơn: ${dash.stats.orders.total}`,
+    bg: 'yellow', emoji: '🛒',
+  },
 ])
 
-const fmt = (v: number) => Number(v).toLocaleString('vi-VN') + '₫'
-const statusLabel = (s: string) => ({ active: 'Đang bán', draft: 'Nháp', hidden: 'Ẩn' }[s] ?? s)
-const statusBadge = (s: string) => ({
-  active: 'badge badge-green', draft: 'badge badge-yellow', hidden: 'badge badge-gray',
-}[s] ?? 'badge badge-gray')
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(v: number) {
+  return Number(v).toLocaleString('vi-VN') + '₫'
+}
+function fmtRevenue(v: number) {
+  if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + ' tỷ₫'
+  if (v >= 1_000_000)     return (v / 1_000_000).toFixed(1) + ' triệu₫'
+  return Number(v).toLocaleString('vi-VN') + '₫'
+}
 
-onMounted(async () => {
-  await categoryStore.fetchAll()
-  await productStore.fetchAll()
-})
+// Bar chart: tính chiều rộng % so với max
+const maxRevenue = computed(() =>
+  Math.max(...dash.stats.revenue_chart.map(r => r.revenue), 1)
+)
+function barWidth(v: number) {
+  return Math.round((v / maxRevenue.value) * 100)
+}
+
+onMounted(() => dash.fetchStats())
 </script>
+
+<style scoped>
+.chart-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 90px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.chart-label  { font-size: 12px; color: var(--gray-500); }
+.chart-bar-wrap { background: var(--gray-100); border-radius: 4px; height: 10px; overflow: hidden; }
+.chart-bar {
+  height: 100%;
+  background: var(--primary, #6366f1);
+  border-radius: 4px;
+  transition: width .4s ease;
+  min-width: 4px;
+}
+.chart-value { font-size: 12px; font-weight: 600; color: var(--gray-700); text-align: right; }
+
+.order-summary { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+.order-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--gray-100);
+}
+.order-item:last-child { border-bottom: none; }
+.stat-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+</style>

@@ -18,6 +18,7 @@ const UserList = () => import('@/admin/views/UserList.vue')
 const CouponList = () => import('@/admin/views/CouponList.vue')
 const CouponForm = () => import('@/admin/views/CouponForm.vue')
 const ReviewList = () => import('@/admin/views/ReviewList.vue')
+const ContactList = () => import('@/admin/views/ContactList.vue') // ← THÊM MỚI
 
 const UserLayout = () => import('@/user/layouts/UserLayout.vue')
 const HomeView = () => import('@/user/views/HomeView.vue')
@@ -35,7 +36,7 @@ const VariantManager = () => import('@/admin/views/VariantManager.vue')
 
 const CouponsView = () => import('@/user/views/CouponsView.vue')
 const ContactView = () => import('@/user/views/ContactView.vue')
-const NewsView = () => import('@/user/views/NewsView.vue') // ← THÊM MỚI
+const NewsView = () => import('@/user/views/NewsView.vue')
 
 // Shorthand meta helpers
 const adminMeta = { requiresAuth: true, requiresAdmin: true }
@@ -82,6 +83,7 @@ const router = createRouter({
         { path: 'banners', component: BannerList, name: 'banners', meta: adminMeta },
         { path: 'banners/create', component: BannerForm, name: 'banner-create', meta: adminMeta },
         { path: 'banners/:id/edit', component: BannerForm, name: 'banner-edit', meta: adminMeta },
+        { path: 'contacts', component: ContactList, name: 'contacts', meta: adminMeta }, // ← THÊM MỚI
       ],
     },
 
@@ -122,7 +124,7 @@ const router = createRouter({
         { path: 'order/:id', component: OrderDetailView, name: 'order-detail', meta: authMeta },
         { path: 'coupons', component: CouponsView, name: 'my-coupons', meta: authMeta },
         { path: 'contact', component: ContactView, name: 'contact' },
-        { path: 'news', component: NewsView, name: 'news' },         // ← THÊM MỚI
+        { path: 'news', component: NewsView, name: 'news' },
       ],
     },
 
@@ -135,17 +137,14 @@ const router = createRouter({
 router.beforeEach((to: any, _from: any, next: any) => {
   const authStore = useAuthStore()
 
-  // 1. Yêu cầu đăng nhập
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
-  // 2. Yêu cầu quyền admin (role = 1)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return next({ name: 'home' })
   }
 
-  // 3. Đã đăng nhập thì không vào trang guest (login/register)
   if (to.meta.guestOnly && authStore.isLoggedIn) {
     return authStore.isAdmin
       ? next({ path: '/admin/dashboard' })

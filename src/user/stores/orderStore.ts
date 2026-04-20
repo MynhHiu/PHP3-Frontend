@@ -21,6 +21,7 @@ export interface Order {
   total: number
   payment: string
   status: string
+  cancel_reason?: string | null
   created_at: string
   items: OrderItem[]
   // backward compat
@@ -67,15 +68,18 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  // ── Huỷ đơn hàng ────────────────────────────────────────────────────────
-  async function cancelOrder(id: number) {
-    try {
-      await api.patch(`/user/orders/${id}/cancel`)
-      const order = orders.value.find(o => o.id === id)
-      if (order) order.status = 'cancelled'
-    } catch (err: any) {
-      throw err
+  // ── Huỷ đơn hàng ─────────────────────────────────────────────
+  async function cancelOrder(id: number, cancelReason: string) {
+    const res = await api.post(
+      `/user/orders/${id}/cancel`,
+      { cancel_reason: cancelReason }
+    )
+    const order = orders.value.find(o => o.id === id)
+    if (order) {
+      order.status = 'cancelled'
+      order.cancel_reason = cancelReason
     }
+    return res.data
   }
 
   async function checkout(payload: CheckoutPayload): Promise<Order> {

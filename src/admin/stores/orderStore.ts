@@ -19,6 +19,7 @@ export interface Order {
   total: number
   payment: string
   status: string
+  cancel_reason?: string
   created_at: string
   details?: OrderDetail[]
   user?: { fullname: string; email: string }

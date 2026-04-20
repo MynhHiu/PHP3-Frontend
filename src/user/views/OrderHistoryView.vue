@@ -77,7 +77,7 @@
             <button
               v-if="order.status === 'pending'"
               class="btn-cancel"
-              @click="cancelOrder(order.id)"
+              @click="openCancelModal(order.id)"
             >Huỷ đơn</button>
             <button
               v-if="order.status === 'delivered'"
@@ -94,8 +94,55 @@
             </button>
           </div>
         </div>
+        <!-- Lý do huỷ -->
+        <div v-if="order.status === 'cancelled' && order.cancelReason" class="cancel-reason-bar">
+          <span class="cancel-reason-label">Lý do huỷ:</span>
+          <span class="cancel-reason-text">{{ order.cancelReason }}</span>
+        </div>
       </div>
     </div>
+
+    <!-- ── MODAL HUỶ ĐƠN ──────────────────────────────────────────────── -->
+    <div v-if="showCancelModal" class="modal-overlay" @click.self="closeCancelModal">
+      <div class="modal-box">
+        <button class="modal-close" @click="closeCancelModal">×</button>
+        <h3 class="modal-title cancel-modal-title">Huỷ đơn hàng</h3>
+        <p class="cancel-modal-desc">Vui lòng cho chúng tôi biết lý do bạn muốn huỷ đơn hàng này.</p>
+
+        <div class="modal-section">
+          <label class="modal-label">Chọn lý do nhanh:</label>
+          <div class="quick-reasons">
+            <button
+              v-for="r in quickReasons"
+              :key="r"
+              :class="['quick-reason-btn', { active: cancelReason === r }]"
+              @click="cancelReason = r"
+            >{{ r }}</button>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <label class="modal-label">Hoặc nhập lý do khác:</label>
+          <textarea
+            v-model="cancelReason"
+            class="modal-textarea"
+            rows="3"
+            placeholder="Nhập lý do huỷ đơn hàng... (ít nhất 5 ký tự)"
+          ></textarea>
+          <p v-if="cancelError" class="modal-error">{{ cancelError }}</p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" @click="closeCancelModal">Đóng</button>
+          <button
+            class="btn-modal-submit btn-modal-cancel-confirm"
+            @click="submitCancel"
+            :disabled="cancelLoading"
+          >{{ cancelLoading ? 'Đang xử lý...' : 'Xác nhận huỷ' }}</button>
+        </div>
+      </div>
+    </div>
+
 
     <!-- ── MODAL ĐÁNH GIÁ ──────────────────────────────────────────── -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
@@ -274,13 +321,14 @@ async function submitReview() {
 // ── Orders ────────────────────────────────────────────────────────────────────
 const orders = computed(() =>
   orderStore.orders.map(o => ({
-    id:       'ORD' + String(o.id).slice(-8),
-    _id:      o.id,
-    date:     new Date(o.created_at).toLocaleString('vi-VN'),
-    status:   o.status,
-    total:    o.total,
-    payment:  o.payment,
-    address:  o.address,
+    id:           'ORD' + String(o.id).slice(-8),
+    _id:          o.id,
+    date:         new Date(o.created_at).toLocaleString('vi-VN'),
+    status:       o.status,
+    cancelReason: o.cancel_reason ?? null,
+    total:        o.total,
+    payment:      o.payment,
+    address:      o.address,
     products: (o.items ?? o.order_details ?? []).map((d: any) => ({
       name:    d.product_name || d.product?.name  || d.product_sku_code,
       skuCode: d.product_sku_code,
@@ -327,10 +375,58 @@ const totalPages = computed(() => {
 const formatPrice = (v: number) => v.toLocaleString('vi-VN')
 
 const cancelOrder = async (id: string) => {
-  const order = orders.value.find(o => o.id === id)
+  // kept for backward compat – now uses modal
+  openCancelModal(id)
+}
+
+// ── Cancel modal ─────────────────────────────────────────────────────────────
+const showCancelModal  = ref(false)
+const cancelTargetId   = ref<string | null>(null)
+const cancelReason     = ref('')
+const cancelError      = ref('')
+const cancelLoading    = ref(false)
+
+const quickReasons = [
+  'Tôi muốn thay đổi địa chỉ giao hàng',
+  'Tôi muốn thay đổi sản phẩm',
+  'Đặt nhầm sản phẩm / số lượng',
+  'Tìm được giá tốt hơn ở nơi khác',
+  'Tôi không còn cần sản phẩm này nữa',
+]
+
+function openCancelModal(id: string) {
+  cancelTargetId.value = id
+  cancelReason.value   = ''
+  cancelError.value    = ''
+  showCancelModal.value = true
+}
+
+function closeCancelModal() {
+  showCancelModal.value = false
+  cancelTargetId.value  = null
+}
+
+async function submitCancel() {
+  if (!cancelReason.value || cancelReason.value.trim().length < 5) {
+    cancelError.value = 'Vui lòng nhập lý do huỷ ít nhất 5 ký tự.'
+    return
+  }
+  const order = orders.value.find(o => o.id === cancelTargetId.value)
   if (!order) return
-  if (confirm('Bạn có chắc muốn huỷ đơn hàng này?')) {
-    await orderStore.cancelOrder(order._id)
+  cancelLoading.value = true
+  cancelError.value   = ''
+  try {
+    await orderStore.cancelOrder(order._id, cancelReason.value.trim())
+    closeCancelModal()
+  } catch (err: any) {
+    // Interceptor wrap lỗi thành { ...err, userMessage } nên cần lấy đúng chỗ
+    cancelError.value =
+      err?.response?.data?.errors?.cancel_reason?.[0] ||
+      err?.response?.data?.message ||
+      err?.userMessage ||
+      'Huỷ đơn thất bại.'
+  } finally {
+    cancelLoading.value = false
   }
 }
 
@@ -535,7 +631,7 @@ const rebuyOrder = async (order: any) => {
 /* ── Modal ─────────────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45);
-  display: flex; align-items: center; justify-content: center; z-index: 999;
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
 }
 .modal-box {
   background: #fff; border-radius: 12px; padding: 28px;
@@ -591,4 +687,40 @@ const rebuyOrder = async (order: any) => {
 .btn-modal-submit { padding: 10px 24px; border-radius: 6px; border: none; background: #2e7d32; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
 .btn-modal-submit:hover:not(:disabled) { background: #1b5e20; }
 .btn-modal-submit:disabled { background: #a5d6a7; cursor: not-allowed; }
+
+/* ── Cancel modal specifics ─────────────────────────────────────────────────── */
+.cancel-modal-title { color: #c62828; }
+.cancel-modal-desc { font-size: 13px; color: #666; margin: -8px 0 18px; line-height: 1.5; }
+
+.quick-reasons {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.quick-reason-btn {
+  padding: 6px 12px; border: 1.5px solid #ddd; border-radius: 20px;
+  background: #fff; font-size: 12px; color: #555; cursor: pointer;
+  transition: all .2s; white-space: nowrap;
+}
+.quick-reason-btn:hover { border-color: #e53935; color: #e53935; }
+.quick-reason-btn.active { border-color: #e53935; background: #ffebee; color: #c62828; font-weight: 600; }
+
+.btn-modal-cancel-confirm {
+  background: #e53935 !important;
+}
+.btn-modal-cancel-confirm:hover:not(:disabled) { background: #c62828 !important; }
+.btn-modal-cancel-confirm:disabled { background: #ef9a9a !important; }
+
+/* ── Cancel reason bar ──────────────────────────────────────────────────────── */
+.cancel-reason-bar {
+  padding: 8px 18px;
+  background: #fff8e1;
+  border-top: 1px solid #ffe082;
+  font-size: 13px;
+  color: #795548;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.cancel-reason-label { font-weight: 600; white-space: nowrap; }
+.cancel-reason-text { flex: 1; }
+
 </style>

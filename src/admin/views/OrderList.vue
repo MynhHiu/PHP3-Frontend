@@ -139,6 +139,10 @@
               <span class="od-label">Trạng thái</span>
               <span :class="['status-badge', 'status-' + detailOrder.status]">{{ statusLabel(detailOrder.status) }}</span>
             </div>
+            <div v-if="detailOrder.status === 'cancelled' && detailOrder.cancel_reason" class="od-row" style="background:#fff1f0;padding:8px;border-radius:4px;margin-top:4px">
+              <span class="od-label" style="color:#cf1322">Lý do huỷ</span>
+              <span style="color:#cf1322;font-weight:500">{{ detailOrder.cancel_reason }}</span>
+            </div>
           </div>
 
           <!-- Sản phẩm -->
@@ -391,4 +395,5 @@ onMounted(() => store.fetchAll())
   font-weight: 600;
   color: #475569;
 }
+
 </style>
